@@ -1,0 +1,17 @@
+services:
+  petclinic-db:
+    image: biarms/mysql:5.7
+    container_name: petclinic-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=petclinic
+      - MYSQL_DATABASE=petclinic
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    ports:
+     - 3306:3306
+    volumes:
+      - type: bind
+        source: ../../config/db/
+        target: /docker-entrypoint-initdb.d/

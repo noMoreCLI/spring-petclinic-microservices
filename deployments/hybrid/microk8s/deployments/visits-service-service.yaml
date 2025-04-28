@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: visits-service
+spec:
+  type: ExternalName
+  externalName: 198.18.134.24.nip.io

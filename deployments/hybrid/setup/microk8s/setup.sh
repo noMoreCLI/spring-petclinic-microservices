@@ -3,16 +3,18 @@
 # Setup script for MicroK8s for Cisco Live Lab
 #
 USER_NAME="${USER_NAME:-cisco}"
+USER_PASSWORD="${USER_PASSWORD:-C1sco12345}"
+ROOT_PASSWORD="${ROOT_PASSWORD:-C1sco12345}"
 echo "Setting Hostname"
 hostnamectl set-hostname microk8s
 
 echo "Setting Password for root"
-echo "root:C1sco12345" | chpasswd
+echo "root:${ROOT_PASSWORD}" | chpasswd
 
 echo "Creating Cisco User"
 useradd -m -s /bin/bash ${USER_NAME}
 echo "Setting Password for ${USER_NAME}"
-echo "${USER_NAME}:C1sco12345" | chpasswd
+echo "${USER_NAME}:${USER_PASSWORD}" | chpasswd
 echo "Adding ${USER_NAME} to sudo group"
 usermod -aG sudo ${USER_NAME}
 

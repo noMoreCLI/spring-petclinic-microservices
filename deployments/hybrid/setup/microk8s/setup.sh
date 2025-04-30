@@ -31,6 +31,7 @@ echo "Installing MicroK8s"
 retry snap install microk8s --classic --channel=1.32/stable
 microk8s enable dns:8.8.8.8,8.8.4.4
 microk8s enable metallb:198.18.134.23-198.18.134.23
+microk8s enable metrics-server
 usermod -a -G microk8s ${USER_NAME}
 echo "Wait for microk8s to be ready ..."
 microk8s status --wait-ready

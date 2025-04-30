@@ -26,7 +26,7 @@ echo "198.18.134.23    config-server discovery-server customers-service vets-ser
 
 echo "Updateing System"
 apt update && apt upgrade -y
-apt install -y retry snapd git wget curl mysql-client ca-certificates openjdk-17-jdk
+apt install -y retry snapd git wget software-properties-common curl mysql-client ca-certificates sshpass unzip ansible zip
 
 echo "Cloning CL2025 US Lab Repository for user: ${USER_NAME}"
 su - ${USER_NAME} -c "git clone --branch cl25us --depth 1 https://github.com/noMoreCLI/spring-petclinic-microservices.git" 

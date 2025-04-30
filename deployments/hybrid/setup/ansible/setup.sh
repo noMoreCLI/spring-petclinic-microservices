@@ -26,7 +26,7 @@ echo "198.18.134.23    config-server discovery-server customers-service vets-ser
 
 echo "Updateing System"
 apt update && apt upgrade -y
-apt install -y retry snapd git wget software-properties-common curl mysql-client ca-certificates sshpass unzip ansible zip
+apt install -y retry snapd git wget software-properties-common curl mysql-client ca-certificates sshpass unzip ansible zip jq bzip2
 
 echo "Installing Ansible Galaxy Collections for user: ${USER_NAME}"
 # Install collections for the cisco user

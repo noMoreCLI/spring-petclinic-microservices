@@ -51,6 +51,9 @@ wget https://github.com/derailed/k9s/releases/download/v0.50.4/k9s_linux_amd64.d
 dpkg -i k9s_linux_amd64.deb
 rm k9s_linux_amd64.deb
 
+echo "Installing PIP3 Kubernetes module"
+apt install -y python3-kubernetes
+
 echo "Cloning CL2025 US Lab Repository for user: ${USER_NAME}"
 su - ${USER_NAME} -c "git clone --branch cl25us --depth 1 https://github.com/noMoreCLI/spring-petclinic-microservices.git"
 

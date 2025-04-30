@@ -28,9 +28,15 @@ echo "Updateing System"
 apt update && apt upgrade -y
 apt install -y retry snapd git wget software-properties-common curl mysql-client ca-certificates sshpass unzip ansible zip
 
-echo "Installing K8 Ansible Galaxy"
-# Install K8 ansible collection
-ansible-galaxy collection install community.kubernetes
+echo "Installing Ansible Galaxy Collections for user: ${USER_NAME}"
+# Install collections for the cisco user
+su - ${USER_NAME} -c "ansible-galaxy collection install kubernetes.core --force"
+su - ${USER_NAME} -c "ansible-galaxy collection install community.kubernetes --force"
+
+# Verify installations
+echo "Verifying Ansible Galaxy Collections..."
+su - ${USER_NAME} -c "ansible-galaxy collection list | grep -E 'kubernetes.core|community.kubernetes'" || {
+    echo "Failed to install Ansible Galaxy collections"
 
 echo "Cloning CL2025 US Lab Repository for user: ${USER_NAME}"
 su - ${USER_NAME} -c "git clone --branch cl25us --depth 1 https://github.com/noMoreCLI/spring-petclinic-microservices.git" 

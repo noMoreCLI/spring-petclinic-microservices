@@ -3,16 +3,18 @@
 # Setup script for MySql Server for Cisco Live Lab
 #
 USER_NAME="${USER_NAME:-cisco}"
+USER_PASSWORD="${USER_PASSWORD:-REVOKED_SSH_PASSWORD}"
+ROOT_PASSWORD="${ROOT_PASSWORD:-REVOKED_SSH_PASSWORD}"
 echo "Setting Hostname"
 hostnamectl set-hostname ansible
 
 echo "Setting Password for root"
-echo "root:REVOKED_SSH_PASSWORD" | chpasswd
+echo "root:${ROOT_PASSWORD}" | chpasswd
 
 echo "Creating Cisco User"
 useradd -m -s /bin/bash ${USER_NAME}
 echo "Setting Password for ${USER_NAME}"
-echo "${USER_NAME}:REVOKED_SSH_PASSWORD" | chpasswd
+echo "${USER_NAME}:${USER_PASSWORD}" | chpasswd
 echo "Adding ${USER_NAME} to sudo group"
 usermod -aG sudo ${USER_NAME}
 

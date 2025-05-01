@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<winston>
+<appdynamics-agent xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <controller host="{{ controller_host_name }}" port="{{ controller_port }}" ssl="{{ appd_ssl_flag }}" enable_tls12="{{ appd_tls12_flag }}">
+    <account name="{{ account_name }}" password="{{ account_access_key }}"/>
+    {% if enable_proxy | bool and proxy_host is defined and proxy_port is defined %}
+    <proxy enabled="{{ enable_proxy | lower }}" host="{{ proxy_host }}" port="{{ proxy_port }}" />
+    {% endif %}
+    <application name="{{ application_name }}" />
+  </controller>
+
+  <machine-agent/>
+
+  <app-agents>
+    <IIS>
+      <automatic{% if monitor_all_IIS_apps is defined %} enabled="{{ monitor_all_IIS_apps | lower }}"{% endif %} />
+      {% if iis_applications is defined and iis_applications | length > 0 %}
+      <applications>
+        {% for app in iis_applications %}
+        <application path="{% if 'path' in app %}{{ app['path'] }}{% else %}/{% endif %}" site="{{ app['site'] }}" >
+          <tier name="{% if 'tier_name' in app %}{{ app['tier_name'] }}{% elif 'path' in app %}{{ app['site'] }}{{ app['path'] }}{% else %}{{ app['site'] }}{% endif %}" />
+          {% if 'node_name' in app %} <node name="{{ app['node_name'] }}" /> {% endif %}
+        </application>
+        {% endfor %}
+      </applications>
+      {% endif %}
+    </IIS>
+    {% if standalone_applications is defined and standalone_applications | length > 0 %}
+    <standalone-applications>
+      {% for app in standalone_applications %}
+      <standalone-application executable="{{ app['executable'] }}"{% if 'command_line' in app %} command-line="{{ app['command_line'] }}"{% endif %}>
+        <tier name="{% if 'tier_name' in app %}{{ app['tier_name'] }}{% else %}{{ app['executable'] }}{% endif %}" />
+        {% if 'node_name' in app %} <node name="{{ app['node_name'] }}" /> {% endif %}
+      </standalone-application>
+      {% endfor %}
+    </standalone-applications>
+    {% endif %}
+  </app-agents>
+</appdynamics-agent>
+</winston>

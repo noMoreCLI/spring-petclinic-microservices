@@ -1,0 +1,25 @@
+- ansible.builtin.include_tasks: validate_supported_os_arch.yml
+
+- ansible.builtin.include_tasks: uninstall-machine-agent.yml
+  when: (agent_action|lower == uninstall_string)
+
+- ansible.builtin.include_tasks: install_machine_agent_linux.yml
+  when: >
+    (ansible_os_family == 'RedHat' or  ansible_os_family == 'Debian' or ansible_os_family == 'Suse')
+
+- ansible.builtin.include_tasks: install_machine_agent_win.yml
+  when: >
+    (ansible_os_family == 'Windows')
+
+- ansible.builtin.include_tasks: install_machine_agent_aix.yml
+  when: >
+    (ansible_os_family == 'AIX')
+
+- set_fact:
+    supported_solaris_architectures: [ 'x86_64', 'x64', 'sun4v', 'sparc' ]
+
+- ansible.builtin.include_tasks: install_machine_agent.yml
+  when: >
+    (ansible_os_family == 'Solaris' and 
+    ansible_architecture in supported_solaris_architectures ) or 
+    (ansible_os_family == 'Alpine')

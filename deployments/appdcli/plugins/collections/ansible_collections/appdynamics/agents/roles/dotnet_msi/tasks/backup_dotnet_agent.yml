@@ -1,0 +1,47 @@
+#TODO improvement: restore the msi package from cache in case the current installation was not managed by this role
+- name: Check current .Net Agent MSI
+  ansible.windows.win_stat:
+    path: "{{ dotnet_agent_dest_folder_win }}\\{{ dotnet_agent_msi_name }}"
+  register: current_dotnet_agent_msi
+
+- name: Check current AD_Setup file
+  ansible.windows.win_stat:
+    path: "{{ dotnet_agent_dest_folder_win }}\\{{ dotnet_agent_ad_setup_xml_name }}"
+  register: current_dotnet_agent_ad_setup_xml
+
+- name: Check current config.xml file
+  ansible.windows.win_stat:
+    path: "{{ DOTNETAGENT_CONFIG_FILE_PATH }}"
+  register: current_dotnet_agent_config_xml
+
+# all files must be present for proper backup - otherwise we won't be able to restore the previous Agent state
+- name: Backup current .Net Agent MSI
+  when:
+    - current_dotnet_agent_msi.stat.exists
+    - current_dotnet_agent_ad_setup_xml.stat.exists
+    - current_dotnet_agent_config_xml.stat.exists
+  block:
+    - name: Ensure .Net Agent MSI backup directory exists and empty
+      ansible.windows.win_file:
+        path: "{{ dotnet_agent_backup_folder_win }}\\"
+        state: "{{ item }}"
+      loop:
+        - absent
+        - directory
+
+    - name: Copy files to backup folder
+      ansible.windows.win_copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        remote_src: "true"
+        force: yes
+      changed_when: "false"
+      loop:
+        - src: "{{ dotnet_agent_dest_folder_win }}\\{{ dotnet_agent_msi_name }}"
+          dest: "{{ dotnet_agent_backup_folder_win }}\\{{ dotnet_agent_msi_name }}"
+        - src: "{{ dotnet_agent_dest_folder_win }}\\{{ dotnet_agent_ad_setup_xml_name }}"
+          dest: "{{ dotnet_agent_backup_folder_win }}\\{{ dotnet_agent_ad_setup_xml_name }}"
+        - src: "{{ DOTNETAGENT_CONFIG_FILE_PATH }}"
+          dest: "{{ dotnet_agent_backup_folder_win }}\\{{ dotnet_agent_config_xml_name }}"
+      loop_control:
+        label: "Backup {{ item.src }} -> {{ item.dest }}"

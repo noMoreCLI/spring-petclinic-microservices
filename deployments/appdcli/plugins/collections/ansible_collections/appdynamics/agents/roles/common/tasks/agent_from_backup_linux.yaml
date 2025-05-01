@@ -1,0 +1,30 @@
+---
+- block: #fetches the agent from backup folder and then unzips to dest folder (provided as vars in task)
+    - name: Find backed up agent files from backup dir
+      ansible.builtin.find:
+        path: "{{ agent_backup_folder_linux }}"
+        patterns: 'agent*'
+      register: agentfiles
+
+    - ansible.builtin.debug:
+        msg: 'Agent backup dir - {{ agent_backup_folder_linux }},  backup files exist - {{ agentfiles.files | count > 0 }}'
+
+    - when: agentfiles.files | count > 0
+      block:
+      - name: Get the latest created backup file
+        ansible.builtin.set_fact:
+          latestagent: "{{ (agentfiles.files | sort(attribute='path'))[-1:] }}"
+
+      - name: Unzip this Agent file from backup folder to {{ agent_dest_folder_linux }}
+        ansible.builtin.unarchive:
+          src: "{{ latestagent[0].path }}"
+          dest: "{{ agent_dest_folder_linux }}"
+          mode: 0755
+          remote_src: yes
+        changed_when: false
+
+      - name: Delete this agent backup file after restoring
+        ansible.builtin.file:
+          state: absent
+          path: "{{ latestagent[0].path }}"
+        changed_when: false

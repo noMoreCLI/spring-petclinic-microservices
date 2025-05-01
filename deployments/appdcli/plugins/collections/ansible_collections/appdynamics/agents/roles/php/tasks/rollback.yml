@@ -1,0 +1,88 @@
+---
+- name: Agent Rollback Block
+  become: true
+  block:
+    # Validate only when agent_action is rollback incase of install/upgrade task already called in parent
+    - name: Pre-check for php before agent installation
+      ansible.builtin.include_tasks: pre-check.yml
+      when: (agent_action|lower == rollback_string)
+
+    # checking if backup exists
+    - name: Check if agent backup zip exists
+      ansible.builtin.find:
+        path: "{{ php_agent_backup_folder_linux }}"
+        patterns: 'agent*'
+      register: agentfiles
+
+    - name: Logging if tar file doesn't exists
+      ansible.builtin.fail:
+        msg:
+          - "Failure occured while doing rollback. As no backup file is present. Aborting Play on this host."
+          - "If your intent was to remove the agent, please use the 'uninstall' task"
+      when: (agentfiles.files | count == 0)
+
+    - name: Cleaning old agent directories
+      ansible.builtin.include_tasks: cleanup-agent.yml
+
+    # ROLLBACK, get the agent from backup using common role
+    - name: If this is a Rollback, Fetch php agent from backup
+      ansible.builtin.include_role:
+        name: common
+        tasks_from: agent_from_backup_linux # run common/tasks/agent_from_backup_linux.yaml
+      vars:
+        agent_backup_folder_linux: "{{ php_agent_backup_folder_linux }}"
+        agent_dest_folder_linux: "{{ agent_path }}"
+
+    - name: Check if backup config file exists
+      ansible.builtin.stat:
+        path: "{{ agent_path }}/{{ agent_config_file }}"
+      register: config_backup_flag
+
+    # Raising Error since backup config file not Found
+    - name: Logging if config file doesn't exists
+      ansible.builtin.fail:
+        msg: Backup config file doesn't exist. Failing Rollback !!
+      when: not config_backup_flag.stat.exists
+
+    - name: Uninstalling agent from php if present
+      ansible.builtin.command:
+        chdir: "{{ agent_path }}"
+        cmd: "./install.sh -u"
+      changed_when: false
+
+    - name: Installing Previous agent with previous config parameters
+      block:
+        - name: "Read backup yml file from remote source"
+          ansible.builtin.command: "cat {{ agent_path }}/{{ agent_config_file }}"
+          changed_when: false
+          register: config_backup_result
+
+        - name: "Parse backup yml into dict variable"
+          ansible.builtin.set_fact:
+            backup_config: "{{ config_backup_result.stdout | from_yaml }}"
+
+        - name: Setting installation parameters
+          ansible.builtin.set_fact:
+            parameters: "{{ backup_config['agent_config'].values() | join(' ') }}"
+            log_directory: "{{ backup_config['log_directory'] | default('') }}"
+            agent_log_level_tag: "{{ backup_config['agent_log_level'] | default('') }}"
+
+        - name: This is install tasks
+          ansible.builtin.include_tasks: install.yml
+
+  rescue:
+    # Calling handler for task failures
+    - name: Setting error status
+      ansible.builtin.set_fact:
+        error_status: true
+
+    - name: Notifying to handler for failure
+      ansible.builtin.debug:
+        msg: "Notifying handler for task failure"
+      changed_when: true
+      notify: "Logging for failures"
+      when: (agent_action|lower == rollback_string)
+
+    - name: Error occured while doing rollback task
+      ansible.builtin.debug:
+        msg: 'Error occured while doing rollback task failed at - {{ ansible_failed_task.name }}'

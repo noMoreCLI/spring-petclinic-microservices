@@ -1,0 +1,12 @@
+- name: Verify php agent install
+  ansible.builtin.include_tasks: handlers/verify_agent_install.yml
+  listen: "Verify php agent install"
+
+- name: Verify php agent uninstall
+  ansible.builtin.include_tasks: handlers/verify_agent_uninstall.yml
+  listen: "Verify php agent uninstall"
+
+- name: appdynamics_agent_status logging for Exception output status failed
+  ansible.builtin.set_fact:
+    playbook_failed: true
+  listen: "Logging for failures"

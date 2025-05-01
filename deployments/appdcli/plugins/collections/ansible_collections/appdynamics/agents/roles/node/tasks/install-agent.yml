@@ -1,0 +1,88 @@
+---
+- name: Take Backup of the installed node agent
+  ansible.builtin.include_tasks: backup.yml
+
+- name: Install Appdynamics Node Agent
+  become: true
+  block:
+    - name: Create Node Agent Directory if not Present
+      ansible.builtin.file:
+        path: "{{ node_agent_dest_folder }}/"
+        state: directory
+        mode: 0775
+
+    - name: Include variables for the controller settings
+      ansible.builtin.include_vars:
+        # Include all yaml files under the vars directory
+        dir: vars
+        extensions:
+          - "yaml"
+          - "yml"
+
+    - name: Check if the appdynamics package already installed
+      ansible.builtin.shell: "grep -i 'appdynamics' {{ node_agent_dest_folder }}/package.json"
+      register: first_time_install
+      ignore_errors: True
+
+    - name: Fail if user is trying to upgrade without a previous installed node agent
+      ansible.builtin.fail:
+        msg: "You need to first install appdynamics using `agent_action = install` before you are able to upgrade"
+      when: (agent_action|lower == upgrade_string) and (first_time_install.rc != 0)
+
+    - name: Install "appdynamics" node.js package.
+      npm:
+        name: appdynamics
+        version: "{{ agent_version | regex_replace('^[~^]+', '') }}"
+        path: "{{ node_agent_dest_folder }}"
+        registry: "{{ install_agent_from }}"
+        state: present
+      when: (agent_action|lower == install_string) or (first_time_install.rc == 0)
+
+    - name: Reconcile the appd-config file with existing config.
+      ansible.builtin.include_tasks: reconcile-config.yml
+      when: (agent_action|lower == upgrade_string)
+
+    - name: Create the appd-config file with default paarameters.
+      ansible.builtin.include_tasks: apply-config.yml
+      when: (agent_action|lower == install_string or agent_action|lower == upgrade_string)
+
+    - name: appdynamics_agent_status nodejs
+      ansible.builtin.debug:
+        msg: '{ "agentInstalled": "Appdynamics Node agent {{ agent_action }} was successful " }'
+
+    - name: agent start up result set fact
+      ansible.builtin.set_fact:
+        agent_result:
+          app: "{{ application_name | default(appd.ansible_facts.appdynamics.app) }}"
+          tier: "{{ tier_name | default(appd.ansible_facts.appdynamics.tier) }}"
+          node: "{{ agent_node_name if (no_node_name_suffix | lower) == 'true' or agent_node_name | regex_search('-0$') else agent_node_name + '-0' }}"
+          error: false
+          install_path: "{{ agent_dir | default('') }}"
+          agent_type: "{{ agent_type | default('node') }}"
+          agent_version: "{{ agent_version | default('') }}"
+          action: "{{ agent_action | default('') }}"
+
+    - name: appdynamics.agent.result
+      ansible.builtin.debug:
+        msg: "{{ agent_result | to_json }}"
+
+  rescue:
+    - name: appdynamics_agent_status Install of the node agent failed
+      ansible.builtin.debug:
+        msg: "Node agent installation failed. Error: {{ ansible_failed_task.name }}"
+
+    - name: Set Node Agent Result Fact
+      ansible.builtin.set_fact:
+        appdynamics_agent_result:
+          app: null
+          tier: null
+          node: null
+          error: true
+          install_path: null
+          agent_type: "{{ agent_type }}"
+          agent_version: null
+          action: "{{ agent_action }}"
+
+    - name: appdynamics.agent.result
+      ansible.builtin.debug:
+        msg: "{{ appdynamics_agent_result | to_json }}"

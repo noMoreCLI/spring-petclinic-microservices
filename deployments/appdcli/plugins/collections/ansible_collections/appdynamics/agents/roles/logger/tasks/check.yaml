@@ -1,0 +1,64 @@
+---
+  # Check to see if the agent directory is present. If not, check is the
+  # ignore flag is set. If the ignore flag is set, we skiip this agent_type
+  # otherwise, an error is raised
+
+  - ansible.builtin.debug:
+      msg: "Must check is agent dir exists : {{ logger_role_standalone }}"
+
+
+  # If the logger role is not run as part of installing agents, we need to
+  # check if the agent directory exists.
+  - when: logger_role_standalone
+    block:
+      - name: Initialize the 'agent_folder_exists' parameter to false
+        ansible.builtin.set_fact:
+          agent_folder_exists: false
+
+      - when: ansible_os_family != 'Windows'
+        block:
+          - name: Check if the Agent is present on the host (Linux).
+            ansible.builtin.stat:
+              path: "{{ logger_agent_dest_folder }}"
+            register: agent_folder
+
+          - name: Update the folder exist state.
+            ansible.builtin.set_fact:
+              agent_folder_exists: true
+            when: agent_folder.stat.exists
+
+      - when: ansible_os_family == 'Windows'
+        block:
+          - name: Check if the Agent is present on the host (Windows).
+            ansible.windows.win_stat:
+              path: "{{ logger_agent_dest_folder }}"
+            register: agent_folder
+
+          - name: Update the folder exist state.
+            ansible.builtin.set_fact:
+              agent_folder_exists: true
+            when: agent_folder.stat.exists
+
+  - ansible.builtin.debug:
+      msg: "Agent folder exists = {{ agent_folder_exists }}"
+
+  # Let the user know if we are skipping this host
+  - ansible.builtin.debug:
+      msg: "Agent folder {{ logger_agent_dest_folder }} was not found! Skipping this change"
+    when: >
+      (not agent_folder_exists) and
+      (logger_ignore_missing is defined) and
+      (logger_ignore_missing)
+
+  # Set the flag to indicate how the role processing should proceed
+  - name: Initialize to false, flag {{ apply_logger_settings }}
+    ansible.builtin.set_fact:
+      apply_logger_settings: false
+
+  - name: Update the 'apply_logger_settings' flag to true if the agent directory exists or we want an error if it does not
+    ansible.builtin.set_fact:
+      apply_logger_settings: true
+    when: >
+        (agent_folder_exists) or
+        (logger_ignore_missing is not defined) or
+        (logger_ignore_missing is defined and not logger_ignore_missing)

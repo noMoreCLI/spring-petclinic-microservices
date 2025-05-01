@@ -1,0 +1,45 @@
+---
+- name: Converge
+  hosts: all
+
+  vars:
+    agent_version: latest # [latest or provide the specific agent version]
+    agent_type: python
+    agent_action: install # can be upgrade/install/rollback, default upgrade when unspecified
+    create_appdynamics_user: true
+    # Python specific Args - Taking Default Values to test default Scene
+    install_env: virtualenv # [default - (main python path taken automatically), virtualenv - (virtualenv path need to be provided)]
+    virtualenv_path: /home/ansible/venv
+    # Controller Specific Args
+    controller_host_name: "random-controller"
+    controller_port: "8090"
+    controller_account_name: "random-customer"
+    controller_account_access_key: "random-access-key"
+    add_install_type_env_var: false
+    application_name: random_app
+    tier_name: random_tier
+
+  pre_tasks:
+    - include_tasks:
+        file: ../common/pre-task.yml
+    
+    - name: "Add user ansible"
+      become: true
+      user:
+        name: ansible
+        system: yes
+        create_home: yes
+        comment: Molecule test user
+        state: present
+    
+    - name: "Install Virtualenv pip package"
+      ansible.builtin.pip:
+        name: virtualenv
+        executable: pip3
+    
+    - name: Manually create the initial virtualenv
+      command:
+        cmd: virtualenv /home/ansible/venv
+
+  roles:
+    - role: appdynamics.agents.python

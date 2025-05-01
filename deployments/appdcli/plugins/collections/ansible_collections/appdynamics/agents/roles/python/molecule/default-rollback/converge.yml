@@ -1,0 +1,60 @@
+---
+
+- name: Converge
+  hosts: all
+  gather_facts: true
+  vars:
+    agent_version: latest # [latest or provide the specific agent version]
+    agent_type: python
+    agent_action: rollback # can be upgrade/install/rollback, default upgrade when unspecified
+    # Python specific Args - Taking Default Values to test default Scene
+    # Controller Specific Args
+    controller_host_name: "random-controller"
+    controller_port: "8090"
+    controller_account_name: "random-customer"
+    controller_account_access_key: "random-access-key"
+    add_install_type_env_var: false
+    
+  pre_tasks:
+    - include_tasks:
+        file: ../common/pre-task.yml
+      
+    # Already set one agent to test upgrade
+    - include_role:
+        name: appdynamics.agents.python
+      vars:
+        agent_version: "22.10.0.5500" # [latest or provide the specific agent version]
+        agent_type: python
+        agent_action: install # can be upgrade/install/rollback, default upgrade when unspecified
+        create_appdynamics_user: true
+        # Python specific Args - Taking Default Values to test default Scene
+        # Controller Specific Args
+        controller_host_name: "random-controller"
+        controller_port: "8090"
+        controller_account_name: "random-customer"
+        controller_account_access_key: "random-access-key"
+        add_install_type_env_var: false
+        application_name: random_app
+        tier_name: random_tier
+    
+    - debug:
+        msg: "**********Upgrading the agent now*****************"
+
+    - include_role:
+        name: appdynamics.agents.python
+      vars:
+        agent_version: latest # [latest or provide the specific agent version]
+        agent_type: python
+        agent_action: upgrade # can be upgrade/install/rollback, default upgrade when unspecified
+        # Python specific Args - Taking Default Values to test default Scene
+        # Controller Specific Args
+        controller_host_name: "random-controller"
+        controller_port: "8090"
+        controller_account_name: "random-customer"
+        controller_account_access_key: "random-access-key"
+        add_install_type_env_var: false
+        application_name: random_app_1
+        tier_name: random_tier_1
+
+  roles:
+    - role: appdynamics.agents.python

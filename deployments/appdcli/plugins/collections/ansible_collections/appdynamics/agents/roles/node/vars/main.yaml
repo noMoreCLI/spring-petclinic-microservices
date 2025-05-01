@@ -1,0 +1,6 @@
+# variable main yaml file for nodejs
+npm_registry: "https://registry.npmjs.org"
+node_agent_enableGraphQL: false
+node_agent_debug_logging: false
+nodejs_version: "16.x"
+no_node_name_suffix: false

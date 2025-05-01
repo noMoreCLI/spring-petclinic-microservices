@@ -1,0 +1,59 @@
+- block:
+    - name: Check if input auto_attach_config_file file Exists
+      local_action: stat path={{ auto_attach_config_file }}
+      register: file_stat
+
+    - name: error as file doesnot exist
+      ansible.builtin.fail:
+        msg: "File does not exist: {{ auto_attach_config_file }}"
+      when: not file_stat.stat.exists
+
+    - name: Check if destination directory exists ( Remote )
+      ansible.builtin.stat:
+        path: "{{ smart_agent_auto_attach_config_dir }}"
+      register: dir_check
+
+    - name: Create Destination Directory ( Remote )
+      ansible.builtin.file:
+        path: "{{ smart_agent_auto_attach_config_dir }}"
+        state: directory
+        recurse: yes
+      when: not dir_check.stat.exists
+      become: true
+
+    - name: Copy LD_PRELOAD configuration file to remote /etc/opt/appdynamics
+      ansible.builtin.copy:
+        src: "{{ auto_attach_config_file }}"
+        dest: "{{ smart_agent_auto_attach_config_file }}"
+        follow: yes
+      when: file_stat.stat.exists
+      become: true
+
+    - name: agent start up result set fact
+      ansible.builtin.set_fact:
+        agent_result:
+          error: false
+          install_path: "{{ agent_dir | default('') }}"
+          agent_type: "{{ agent_type | default('node') }}"
+          action: "{{ agent_action | default('') }}"
+
+    - name: appdynamics.agent.result
+      ansible.builtin.debug:
+        msg: "{{ agent_result | to_json }}"
+
+  rescue:
+    - name: appdynamics_agent_status Configure of the SmartAgent failed
+      ansible.builtin.debug:
+        msg: "SmartAgent configure task failed. Error: {{ ansible_failed_task.name }}"
+
+    - name: agent start up result set fact
+      ansible.builtin.set_fact:
+        agent_result:
+          error: true
+          install_path: "{{ agent_dir | default('') }}"
+          agent_type: "{{ agent_type | default('node') }}"
+          action: "{{ agent_action | default('') }}"
+
+    - name: appdynamics.agent.result
+      ansible.builtin.debug:
+        msg: "{{ agent_result | to_json }}"

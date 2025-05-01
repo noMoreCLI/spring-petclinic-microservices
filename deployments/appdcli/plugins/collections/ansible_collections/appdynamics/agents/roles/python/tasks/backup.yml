@@ -1,0 +1,83 @@
+- name: Agent backup block
+  become: "{{ run_with_root }}"
+  block:
+    - name: Checking if Python Agent Already installed
+      ansible.builtin.shell: "{{ python_path }} freeze | grep appdynamics"
+      register: old_agent_found
+      ignore_errors: true
+      changed_when: false
+      failed_when: old_agent_found.rc > 1
+
+    - name: Create Python Agent Backup folder
+      ansible.builtin.file:
+        path: "{{ python_agent_backup_folder }}"
+        state: directory
+        mode: '755'
+      when: old_agent_found.rc == 0
+
+    - name: Create Python Agent Directory if not Present
+      ansible.builtin.file:
+        path: "{{ python_agent_dest_folder }}/wheel"
+        state: directory
+        mode: '755'
+    
+    - name: Create Python tmp Agent Directory if not Present
+      ansible.builtin.file:
+        path: "{{ python_agent_backup_folder }}/tmp"
+        state: directory
+        mode: '755'
+
+
+    # Saving python-agent-requirements.txt in /tmp as become is false (we need pip freeze for the user not the root)
+    - name: Backing up Existing pip module versions (Python Agent Backup)
+      ansible.builtin.shell: "{{ python_path }} freeze | sed -n -e '/^appdynamics/p' > {{ python_agent_backup_folder }}/tmp/python-agent-requirements.txt"
+      when: old_agent_found.rc == 0
+      changed_when: false
+
+    - name: Move Requirements File to Destination Directory
+      ansible.builtin.command: "mv {{ python_agent_backup_folder }}/tmp/python-agent-requirements.txt {{ python_agent_dest_folder }}"
+      when: old_agent_found.rc == 0
+      changed_when: false
+
+    # This Flag is used during Rescue. If this is undefined we did not perform any write on the target hence just show error don't clean anything
+    - name: Requirements File Generated and saved in Agent Destination
+      ansible.builtin.set_fact:
+        requirements_file_created: true
+      when: old_agent_found.rc == 0
+
+    - name: Check if agent_config_path exists
+      ansible.builtin.stat: 
+        path: "{{ agent_config_path }}"
+      register: agent_config_path_status
+      when: agent_config_path is defined
+      changed_when: false
+
+    - name: Copy Config File in case it is outside agent destination (i.e Custom config path)
+      ansible.builtin.shell: "cp {{ agent_config_path }} {{ python_agent_dest_folder }}/"
+      when: old_agent_found.rc == 0 and config_file_path_prefix != python_agent_dest_folder and agent_config_path_status.stat.exists
+      changed_when: false
+
+    - name: Archive Agent Destination # Complete Agent Directory for Backup Zip
+      community.general.archive:
+        path: "{{ python_agent_dest_folder }}/*"
+        dest: "{{ python_agent_backup_folder }}/agent.{{ ansible_date_time.iso8601 }}.zip"
+        mode: '755'
+        exclude_path: "{{ python_agent_dest_folder }}/logs"
+      changed_when: false
+      when: old_agent_found.rc == 0
+
+    # This is inside backup.yml because if kept in install-agent.yml we will need to find if old agent exists again
+    - name: Removing old pip packages
+      ansible.builtin.shell: "{{ python_path }}  uninstall -r {{ python_agent_dest_folder }}/python-agent-requirements.txt -y"
+      when: old_agent_found.rc == 0
+      changed_when: false
+    # This Flag is used during Rescue to identify if the file(python-agent-requirements.txt) was created so we will have to clean it up
+    - name: Backup of agent done
+      ansible.builtin.set_fact:
+        backup_done: true
+      when: old_agent_found.rc == 0
+  rescue:
+    # This Task is to call the Rescue of the install-agent.yml
+    - name: Backup Task Failed
+      ansible.builtin.fail:
+        msg: "Error Occurred while taking backup. Task Failed {{ ansible_failed_task.name }}"

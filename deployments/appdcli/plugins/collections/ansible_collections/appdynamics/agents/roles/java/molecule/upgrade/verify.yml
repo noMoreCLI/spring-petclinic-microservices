@@ -1,0 +1,51 @@
+---
+# This is an example playbook to execute Ansible tests.
+
+- name: Verify
+  hosts: all
+  gather_facts: true
+  tasks:
+    - set_fact:
+        controller_info_verifier: "random-controller"
+        agent_version: '22.7.0'
+    - name: Agent installation verification
+      block:
+        - name: Check if Agent File present
+          stat:
+            path: "/opt/appdynamics/java-agent"
+          register: agent_found
+
+        - name: Assert that Agent file found
+          assert:
+            that:
+              - agent_found.stat.exists
+            success_msg: "Agent Found in Destination"
+            fail_msg: "Agent Not Found in Destination. Check Failed"
+
+        - name: Find agent version directory
+          find:
+            path: "/opt/appdynamics/java-agent"
+            patterns: 'ver*'
+            file_type: directory
+          register: versionfiles
+        - name: Assert that right Agent Version installed
+          assert:
+            that:
+              - versionfiles.files[0].path is search("{{agent_version}}")
+        - name: Find Controller info content
+          set_fact:
+            controller_info_path: "{{ versionfiles.files[0].path + '/conf/controller-info.xml' }}"
+        - name: Find if config present in controllerInfo
+          register: config_presence
+          shell: "grep -i '{{ controller_info_verifier }}' {{ controller_info_path }}"
+        - name: Verify config presence
+          assert:
+            that:
+              - config_presence
+        - shell: "cat /etc/environment | grep 'APPDYNAMICS_ANSIBLE_INSTALLED_AGENTS=java'"
+          register: env_variable_present
+          changed_when: false
+        - name: Verify env var presence
+          assert:
+            that:
+              - env_variable_present

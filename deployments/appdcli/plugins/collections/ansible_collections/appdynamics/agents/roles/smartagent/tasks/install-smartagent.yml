@@ -1,0 +1,49 @@
+---
+- name: Install Appdynamics SmartAgent
+  become: true
+  environment:
+    APPD_USER: "{{ appdynamics_user }}"
+    APPD_USER_GROUP: "{{ appdynamics_group }}"
+  block:
+    - name: Check if artifact_path or agent_version is provided
+      fail:
+        msg: "Please provide either agent_version with artifact_path"
+      when: artifact_path != "" and agent_version == ""
+
+    - name: Validate smartagent install file exists in the specified path
+      local_action: stat path={{ artifact_path }}
+      register: smartagent_install_file
+
+    - name: Debug smartagent install file
+      debug:
+        msg: "{{ smartagent_install_file.stat.exists }}"
+
+    - name: Get smartagent latest version
+      ansible.builtin.command: >
+        {{ role_path }}/files/get-latest-version.sh
+      register: agent_version_sh
+      failed_when: agent_version_sh.rc != 0
+      delegate_to: localhost
+      when: agent_version == "latest" or agent_version == ""
+
+    - name: Set smartagent version
+      set_fact:
+        agent_ver: "{{ agent_version_sh.stdout }}"
+      when: agent_version == "latest" or agent_version == ""
+
+    - name: Set smartagent version
+      set_fact:
+        agent_ver: "{{ agent_version }}"
+      when: agent_version != "latest" and agent_version != ""
+
+    - name: Include tasks for Linux
+      ansible.builtin.include_tasks: install-smartagent-linux.yml
+      when: ansible_os_family == 'Debian' or ansible_os_family == 'RedHat' or ansible_os_family == 'Suse'
+
+    - name: Download Windows Installer on Control Node
+      ansible.builtin.include_tasks: download-windows-smartagent-on-control-node-linux.yml
+      when: ansible_os_family == 'Windows'
+
+    - name: Include tasks for Windows
+      ansible.builtin.include_tasks: install-smartagent-windows.yml
+      when: ansible_os_family == 'Windows'

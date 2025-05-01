@@ -1,0 +1,17 @@
+---
+- name: Check that the agent file exists on the nfs path
+  ansible.windows.win_stat:
+    path: '{{ agent_source_location }}'
+  delegate_to: '{{ inventory_hostname }}'
+  register: stat_result
+
+- name: Assert nfs file exists
+  ansible.builtin.assert:
+    that: stat_result.stat.exists
+    msg: 'The custom download resource does not exist, please check input'
+
+- name: Copying Agent zip file from nfs to managed Nodes
+  ansible.windows.win_copy:
+    src: '{{ agent_source_location }}'
+    dest: '{{ agent_destination_path }}'
+    remote_src:  "true"

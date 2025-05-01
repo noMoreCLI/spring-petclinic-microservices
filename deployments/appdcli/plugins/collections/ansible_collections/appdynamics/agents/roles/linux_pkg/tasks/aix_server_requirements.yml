@@ -1,0 +1,19 @@
+---
+#- name: Update apt cache
+#  apt: 
+#   update_cache: yes
+#   force_apt_get: yes
+
+- name: Install tools and pre-requisites for aix variants
+  ansible.builtin.yum:
+    update_cache: true
+    name:
+     - unzip
+    state: installed
+
+- name: Install gunzip on AIX
+  become: true
+  package:
+    name: gzip
+    state: present
+  ignore_errors: true

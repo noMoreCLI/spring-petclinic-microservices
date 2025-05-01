@@ -1,0 +1,58 @@
+# Check if application_name is not defined we can generate it using appdynamics.agents.appd_facts module
+# This can become a separate play verify_parameter but for now it is only used to create a config file so keeping it here
+- when: application_name is not defined
+  block:
+    # switch to using appdynamics.agents.win_appd_facts on the managed node but for now just run the existing module on controlling node since we only care about the application name
+    - name: Autogenerate appdynamics facts
+      delegate_to: "localhost"
+      appdynamics.agents.appd_facts:
+      register: appd
+
+    - name: Set application_name to defaul value
+      ansible.builtin.set_fact:
+        application_name: '{{ appd.ansible_facts.appdynamics.app }}'
+
+- name: Print Application Name
+  ansible.builtin.debug:
+    msg: "{{ application_name }}"
+
+- name: Check if custom AD_Setup configuration file is provided
+  delegate_to: 'localhost'
+  when: custom_ad_setup_file is defined
+  block:
+    - name: Check custom AD_Setup configuration file on localhost
+      ansible.builtin.stat:
+        path: "{{ custom_ad_setup_file }}"
+      register: ad_setup_stat_result
+
+    - name: Assert custom AD_Setup configuration file exists
+      ansible.builtin.assert:
+        that: ad_setup_stat_result.stat.exists
+        msg: 'Custom AD_Setup file does not exist: {{ custom_ad_setup_file }}'
+
+- name: Create AD_Setup configuration file
+  ansible.builtin.template:
+    src: "{{ custom_ad_setup_file if custom_ad_setup_file is defined else 'templates/ad_setup.xml.j2' }}"
+    dest: "{{ dotnet_agent_dest_folder_win }}\\{{ dotnet_agent_ad_setup_xml_name }}"
+    force: yes
+  changed_when: false
+
+- name: Check if custom .Net Agent MSI config.xml file is provided
+  delegate_to: 'localhost'
+  when: custom_config is defined
+  block:
+    - name: Check custom config.xml file on localhost
+      ansible.builtin.stat:
+        path: "{{ custom_config }}"
+      register: custom_config_stat_result
+
+    - name: Assert custom config.xml file exists
+      ansible.builtin.assert:
+        that: custom_config_stat_result.stat.exists
+        msg: 'Custom config.xml file does not exist: {{ custom_config }}'
+
+    - name: Copy custom config.xml to remote host
+      ansible.windows.win_copy:
+        src: "{{ custom_config }}"
+        dest: "{{ dotnet_agent_dest_folder_win }}\\{{ dotnet_agent_config_xml_name }}"
+        force: yes

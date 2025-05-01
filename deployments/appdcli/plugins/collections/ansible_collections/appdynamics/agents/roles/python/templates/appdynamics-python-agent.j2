@@ -1,0 +1,105 @@
+[agent]
+app={{ app }}
+tier={{ tier }}
+node={{ node }}
+dir={{ config_dir }}
+{% if config_node_reuse != "" %}
+nodereuse={{ config_node_reuse }}
+{% endif %}
+{% if config_node_reuse_prefix != "" %}
+nodereuseprefix={{ config_node_reuse_prefix }}
+{% endif %}
+{% if config_unique_host_id != "" %}
+uniquehostid={{ config_unique_host_id }}
+{% endif %}
+
+
+[wsgi]
+script={{ config_wsgi_script }}
+callable={{ config_wsgi_callable }}
+module={{ config_wsgi_module }}
+
+[controller]
+host={{ config_controller_host_name }}
+port={{ config_controller_port }}
+account={{ config_controller_account_name }}
+accesskey={{ config_controller_account_access_key }}
+ssl={{ config_enable_controller_ssl }}
+{% if config_controller_certfile != "" %}
+certfile={{ config_controller_certfile }}
+{% endif %}
+
+[log]
+level={{ config_log_level }}
+debugging={{ config_log_debugging }}
+dir={{ config_log_dir }}
+
+[eum]
+disable-cookie={{ config_eum_disable_cookie }}
+user-agent-allowlist={{ config_eum_user_agent_allowlist }}
+
+[services:snapshot]
+exit-call-details-length={{ config_snapshot_exit_call_details_length }}
+
+[services:transaction-monitor]
+bt-max-duration-ms={{ config_transaction_monitor_bt_max_duration_ms }}
+
+[services:analytics]
+host={{ config_analytics_host }}
+port={{ config_analytics_port }}
+ssl={{ config_analytics_ssl }}
+ca-file={{ config_analytics_ca_file }}
+
+[controller:http-proxy]
+{% if proxy_host is defined and proxy_host != "" %}
+host={{ proxy_host }}
+{% endif %}
+{% if proxy_port is defined and proxy_port != "" %}
+port={{ proxy_port }}
+{% endif %}
+{% if proxy_user is defined and proxy_user != "" %}
+user={{ proxy_user }}
+{% endif %}
+{% if proxy_password_file is defined and proxy_password_file != "" %}
+password-file={{ proxy_password_file }}
+{% endif %}
+
+[proxy]
+{% if max_heap_size is defined and max_heap_size != "" %}
+max-heap-size={{ max_heap_size }}
+{% endif %}
+{% if min_heap_size is defined and min_heap_size != "" %}
+min-heap-size={{ min_heap_size }}
+{% endif %}
+{% if max_perm_size is defined and max_perm_size != "" %}
+max-perm-size={{ max_perm_size }}
+{% endif %}
+{% if proxy_debug_port is defined and proxy_debug_port != "" %}
+proxy-debug-port={{ proxy_debug_port }}
+{% endif %}
+{% if start_suspended is defined and start_suspended != "" %}
+start-suspended={{ start_suspended }}
+{% endif %}
+{% if debug_opt is defined and debug_opt != "" %}
+debug-opt={{ debug_opt }}
+{% endif %}
+{% if proxy_agent is defined and proxy_agent != "" %}
+agent={{ proxy_agent }}
+{% endif %}
+{% if tcp_comm_host is defined and tcp_comm_host != "" %}
+tcp-comm-host={{ tcp_comm_host }}
+{% endif %}
+{% if tcp_comm_port is defined and tcp_comm_port != "" %}
+tcp-comm-port={{ tcp_comm_port }}
+{% endif %}
+{% if tcp_reporting_port is defined and tcp_reporting_port != "" %}
+tcp-reporting-port={{ tcp_reporting_port }}
+{% endif %}
+{% if tcp_request_port is defined and tcp_request_port != "" %}
+tcp-request-port={{ tcp_request_port }}
+{% endif %}
+{% if tcp_port_range is defined and tcp_port_range != "" %}
+tcp-port-range={{ tcp_port_range }}
+{% endif %}
+
+

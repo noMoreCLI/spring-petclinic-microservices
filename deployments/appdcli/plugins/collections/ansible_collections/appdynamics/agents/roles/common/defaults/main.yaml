@@ -1,0 +1,136 @@
+---
+# default agent directories. These are used by the logger role as well,
+# which is why they are defined here rather than in the individual roles
+
+# Supported Agent types
+supported_agent_types: ['java', 'sun-java', 'java7', 'sun-java7', 'ibm-java', 'dotnet_msi', 'machine', 'db', 'dotnet', 'apache', 'iib', 'php', 'python', 'node', 'smartagent']
+
+# agent directories
+appd_linux_root: "{{ linux_install_root | default('/opt/appdynamics') }}"
+appd_windows_root: "{{ windows_install_root | default('C:\\appdynamics') }}"
+
+db_agent_dest_folder_linux: "{{ appd_linux_root }}/db-agent"
+db_agent_dest_folder_windows: "{{ appd_windows_root }}/db-agent"
+java_agent_dest_folder_linux: "{{ appd_linux_root }}/java-agent"
+java_agent_dest_folder_win: "{{ appd_windows_root }}/java-agent"
+java_agent_backup_folder_linux: "{{ appd_linux_root }}/backup/java-agent"
+java_agent_backup_folder_windows: "{{ appd_windows_root }}/backup/java-agent"
+machine_agent_dest_folder_linux: "{{ appd_linux_root }}/machine-agent"
+machine_agent_dest_folder_win: "{{ appd_windows_root }}/machine-agent"
+machine_agent_backup_folder_linux: "{{ appd_linux_root }}/backup/machine-agent"
+machine_agent_backup_folder_windows: "{{ appd_windows_root }}/backup/machine-agent"
+php_agent_dest_folder_linux: "{{ appd_linux_root }}/php-agent"
+php_agent_backup_folder_linux: "{{ appd_linux_root }}/backup/php-agent"
+iib_agent_dest_folder: "{{ appd_linux_root }}/iib-agent"
+iib_agent_backup_folder: "{{ appd_linux_root }}/backup/iib-agent"
+python_agent_dest_folder: "{{ appd_linux_root }}/python-agent"
+python_agent_backup_folder: "{{ appd_linux_root }}/backup/python-agent"
+node_agent_dest_folder: "{{ appd_linux_root }}/nodejs-agent"
+node_agent_backup_folder: "{{ appd_linux_root }}/nodejs-agent-backup"
+apache_agent_dest_folder: "{{ appd_linux_root }}/apache-agent"
+apache_agent_backup_folder_linux: "{{ appd_linux_root }}/backup/apache-agent"
+
+logger_role_standalone: true # used to indicate that the role is being used on its own
+max_agent_backup_count: 1 #max allowed backup count per agent-type
+
+install_string: install
+upgrade_string: upgrade
+rollback_string: rollback
+uninstall_string: uninstall
+
+keep_backup: false # override to avoid deleting backup files while uninstalling
+
+allowed_actions: ['{{ install_string }}', '{{ upgrade_string }}', '{{ rollback_string }}', '{{ uninstall_string }}']
+
+#default agent_action variable
+agent_action: "{{ upgrade_string }}"
+
+# add env variable to determine tool usage(default enabled)
+add_ansible_install_env_var: true
+ansible_install_env_var: APPDYNAMICS_ANSIBLE_INSTALLED_AGENTS
+#eg. APPDYNAMICS_ANSIBLE_INSTALLED_AGENTS=java,machine,iib
+allowed_install_env_var_values: ['java', 'machine', 'dotnet_msi', 'db', 'iib', 'apache', 'python', 'php', 'node', 'smartagent']
+
+# for validating that these below paths or their prefix is not provided as custom install path variable
+reserved_paths_linux_root: [
+  "{{ db_agent_dest_folder_linux }}",
+  "{{ java_agent_dest_folder_linux }}",
+  "{{ java_agent_backup_folder_linux }}",
+  "{{ machine_agent_dest_folder_linux }}",
+  "{{ machine_agent_backup_folder_linux }}",
+  "{{ php_agent_dest_folder_linux }}",
+  "{{ php_agent_backup_folder_linux }}",
+  "{{ iib_agent_dest_folder }}",
+  "{{ iib_agent_backup_folder }}",
+  "{{ python_agent_dest_folder }}",
+  "{{ python_agent_backup_folder }}",
+  "{{ node_agent_dest_folder }}",
+  "{{ node_agent_backup_folder }}",
+  "{{ apache_agent_dest_folder }}",
+  "{{ apache_agent_backup_folder_linux }}"
+]
+
+reserved_paths_windows_root: [
+  "{{ db_agent_dest_folder_windows }}",
+  "{{ java_agent_dest_folder_win }}",
+  "{{ machine_agent_dest_folder_win }}",
+  "{{ java_agent_backup_folder_windows }}",
+  "{{ machine_agent_backup_folder_windows }}"
+]
+
+#wheel user for Machine agent, user for DB agent
+appdynamics_user: appdynamics
+appdynamics_group: "{{ appdynamics_user }}"
+# create appdynamics_user if missing
+create_appdynamics_user: no
+############ DO NOT CHANGE ANY OF THESE DEFAULTS - Except you know what you're doing#######################
+java_system_properties: ""
+host_name: '{{ ansible_hostname }}' # computername/hostname of the target machine
+
+# Indicate that we need to initialize the agent variables. Some roles (like logger)
+# don't require all agent vars to be initialized
+init_and_validate_agent_variables: true
+
+# Agent Log level
+agent_log_level: "info"
+agent_loggers: ['com', 'com.singularity']
+
+# Analytics agnent location
+analytics_agent_host: localhost
+analytics_agent_port: 9090
+
+#windows_ma_finder_string
+win_ma_finder_string: machineagent-bundle-64bit-windows
+win_db_finder_string: db-agent-winx64
+linux_ma_finder_string: machineagent-bundle-64bit-linux
+linux_db_finder_string: db-agent
+
+# Machine Common
+ma_agent_dest_file: machine-agent.zip
+machine_hierarchy: ""
+
+#controller defaults
+enable_ssl: false
+enable_proxy: false
+enable_proxy_authentication: false
+analytics_event_endpoint: "https://fra-ana-api.saas.appdynamics.com:443"
+controller_port: "443"
+controller_account_name: "customer1"
+controller_global_analytics_account_name: "customer1-guid"
+enable_analytics_agent: "true"
+
+#restart_app flag - Set this flag true to automatically restart service
+restart_app: true
+
+# Default protocol for custom download
+download_protocol: http
+supported_download_protocols: ['http', 'local', 'nfs']
+download_script: sh
+
+# smart agent
+install_smart_agent: false
+smart_agent_artifact_path: ""
+smart_agent_version: ""
+smart_agent_auto_start: false
+smart_agent_action: "install"
+smart_agent_port: 8030

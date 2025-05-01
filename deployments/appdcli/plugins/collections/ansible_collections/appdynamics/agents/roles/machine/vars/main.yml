@@ -1,0 +1,5 @@
+machine_agent_install_path_linux: "{{ linux_custom_agent_install_path | default(machine_agent_dest_folder_linux) }}"
+machine_agent_install_path_windows: "{{ windows_custom_agent_install_path | default(machine_agent_dest_folder_win) }}"
+machine_playbook_failed: false
+create_appdynamics_user: yes
+autostart_agent: "true"

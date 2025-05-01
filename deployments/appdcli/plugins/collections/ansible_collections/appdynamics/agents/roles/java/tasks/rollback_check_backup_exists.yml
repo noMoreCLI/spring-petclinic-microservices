@@ -1,0 +1,28 @@
+---
+- name: Check backup existence before performing rollback
+  block:
+    - when: ansible_os_family in ['RedHat', 'Debian', 'Suse']
+      block:
+        - ansible.builtin.find:
+            path: "{{ java_agent_backup_folder_linux }}"
+            patterns: 'agent*'
+          register: agentfiles
+
+        - ansible.builtin.fail:
+            msg:
+              - "Failure occured while doing rollback. As no backup file is present. Agent will not be restored from backup."
+              - "If your intent was to remove the agent, please use the 'uninstall' task"
+          when: (agentfiles.files | count == 0)
+
+    - when: ansible_os_family == 'Windows'
+      block: #windows
+        - ansible.windows.win_find:
+            paths: "{{ java_agent_backup_folder_windows }}"
+            patterns: 'agent*'
+          register: agentfiles
+
+        - ansible.builtin.fail:
+            msg:
+              - "Failure occured while doing rollback. As no backup file is present. Agent will not be restored from backup."
+              - "If your intent was to remove the agent, please use the 'uninstall' task"
+          when: (agentfiles.files | count == 0)

@@ -1,0 +1,9 @@
+batch_size: 5  # This ensures that the installation is done in batches instead of installing the agent on all the hosts simultaneously.
+hosts:
+  - name: "host1"  # the name for the remote host 
+    host: "172.31.1.243"  # the hostname of the primary host
+    port: 22       # the default SSH port for the direct communication of primary and remote hosts
+    username: "ubuntu"
+    private_key_path: "/home/ubuntu/.ssh/id_rsa"
+    temp_folder_path: "/tmp"  # the temporary folder path of the primary host
+    remote_dir: "/opt/appdynamics/smartagent" # path to the remote host directory

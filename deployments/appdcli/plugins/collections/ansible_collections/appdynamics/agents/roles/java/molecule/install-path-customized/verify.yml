@@ -1,0 +1,65 @@
+---
+# This is an example playbook to execute Ansible tests.
+
+- name: Verify
+  hosts: all
+  gather_facts: true
+  tasks:
+    - set_fact:
+        controller_info_verifier: 'lncontroller20103-2010-o8evv8rp'
+        agent_version: '22.7.0'
+        linux_install_root: "/opt/appdynamics/linux_root"
+        linux_custom_agent_install_path: "/opt/appdynamics/agent_install_path"
+
+    - name: Agent installation verification
+      block:
+        - name: Check if Agent File present
+          stat:
+            path: "{{ linux_custom_agent_install_path }}/javaagent.jar"
+          register: agent_found
+
+        - name: Assert that Agent file found
+          assert:
+            that:
+              - agent_found.stat.exists
+            success_msg: "Agent Found in Destination"
+            fail_msg: "Agent Not Found in Destination. Check Failed"
+
+        - name: Find agent version directory
+          find:
+            path: "{{ linux_custom_agent_install_path }}/"
+            patterns: 'ver*'
+            file_type: directory
+          register: versionfiles
+        - name: Assert that right Agent Version installed
+          assert:
+            that:
+              - versionfiles.files[0].path is search("{{agent_version}}")
+
+        - name: Find agent backup file created in root dir
+          find:
+            path: "{{ linux_install_root }}/backup/java-agent"
+            patterns: 'agent*'
+          register: backup_file
+
+        - name: Assert that backup file exists
+          assert:
+            that: backup_file.files | count > 0
+
+        - name: Find Controller info content
+          set_fact:
+            controller_info_path: "{{ versionfiles.files[0].path + '/conf/controller-info.xml' }}"
+        - name: Find if config present in controllerInfo
+          register: config_presence
+          shell: "grep -i '{{ controller_info_verifier }}' {{ controller_info_path }}"
+        - name: Verify config presence
+          assert:
+            that:
+              - config_presence
+        - shell: "cat /etc/environment | grep 'APPDYNAMICS_ANSIBLE_INSTALLED_AGENTS=java'"
+          register: env_variable_present
+          changed_when: false
+        - name: Verify env var presence
+          assert:
+            that:
+              - env_variable_present

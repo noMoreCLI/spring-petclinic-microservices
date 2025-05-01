@@ -1,0 +1,15 @@
+- name: "Add user {{ appdynamics_user }}"
+  become: yes
+  ansible.builtin.user:
+    name: "{{ appdynamics_user }}"
+    system: yes
+    create_home: no
+    comment: AppDynamics functional user
+    state: present
+
+# make sure appdynamics_group group exists so that recursive ownership task does not fail
+- name: "Create group {{ appdynamics_group }}"
+  become: true
+  ansible.builtin.group:
+    name: "{{ appdynamics_group }}"
+    state: present

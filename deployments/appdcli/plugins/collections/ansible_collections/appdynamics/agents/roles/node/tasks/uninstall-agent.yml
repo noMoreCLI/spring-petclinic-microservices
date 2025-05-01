@@ -1,0 +1,61 @@
+- name: Uninstall Appdynamics Node Agent
+  become: true
+  block:
+    - name: Remove the package "appdynamics".
+      ansible.builtin.npm:
+        name: appdynamics
+        state: absent
+        path: "{{ node_agent_dest_folder }}"
+
+    - name: Remove appd-config.js file.
+      ansible.builtin.file:
+        state: absent
+        path: "{{ node_agent_dest_folder }}/appd-config.js"
+
+    - name: Remove backup folder.
+      ansible.builtin.file:
+        state: absent
+        path: "{{ node_agent_backup_folder }}"
+      changed_when: false
+      when: not keep_backup
+
+    - name: appdynamics_agent_status nodejs
+      ansible.builtin.debug:
+        msg: '{ "agentUninstall": "Appdynamics Node agent was successfully removed" }'
+
+    - name: agent start up result set fact
+      ansible.builtin.set_fact:
+        agent_result:
+          app: "{{ application_name | default(appd.ansible_facts.appdynamics.app) }}"
+          tier: "{{ tier_name | default(appd.ansible_facts.appdynamics.tier) }}"
+          node: "{{ agent_node_name if (no_node_name_suffix | lower ) == 'true' or agent_node_name | regex_search('-0$') else agent_node_name + '-0' }}"
+          error: false
+          install_path: "{{ node_agent_dest_folder | default('') }}"
+          agent_type: "{{ agent_type | default('node') }}"
+          agent_version: "{{ agent_version | default('') }}"
+          action: "{{ agent_action | default('') }}"
+
+    - name: appdynamics.agent.result
+      ansible.builtin.debug:
+        msg: "{{ agent_result | to_json }}"
+
+  rescue:
+    - name: appdynamics_agent_status Uninstall Task Failed
+      ansible.builtin.debug:
+        msg: '{ "agentRollback": "Error Occurred while uninstalling agent."}'
+
+    - name: Set Node Agent Result Fact
+      ansible.builtin.set_fact:
+        appdynamics_agent_result:
+          app: null
+          tier: null
+          node: null
+          error: true
+          install_path: null
+          agent_type: "{{ agent_type }}"
+          agent_version: null
+          action: "{{ agent_action }}"
+
+    - name: appdynamics.agent.result
+      ansible.builtin.debug:
+        msg: "{{ appdynamics_agent_result | to_json }}"

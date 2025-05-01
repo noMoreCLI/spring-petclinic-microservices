@@ -5,6 +5,7 @@
 USER_NAME="${USER_NAME:-cisco}"
 USER_PASSWORD="${USER_PASSWORD:-C1sco12345}"
 ROOT_PASSWORD="${ROOT_PASSWORD:-C1sco12345}"
+
 echo "Setting Hostname"
 hostnamectl set-hostname ansible
 
@@ -24,7 +25,7 @@ echo "198.18.134.25    petclinic-db" >> /etc/hosts
 echo "198.18.134.24    visits-service" >> /etc/hosts
 echo "198.18.134.23    config-server discovery-server customers-service vets-service admin-service genai-service api-gateway" >> /etc/hosts
 
-echo "Updateing System"
+echo "Updating System"
 apt update && apt upgrade -y
 apt install -y retry snapd git wget software-properties-common curl mysql-client ca-certificates sshpass unzip ansible zip jq bzip2 python3.12-venv
 
@@ -37,6 +38,8 @@ su - ${USER_NAME} -c "ansible-galaxy collection install community.kubernetes --f
 echo "Verifying Ansible Galaxy Collections..."
 su - ${USER_NAME} -c "ansible-galaxy collection list | grep -E 'kubernetes.core|community.kubernetes'" || {
     echo "Failed to install Ansible Galaxy collections"
+    exit 1
+}
 
 echo "Cloning CL2025 US Lab Repository for user: ${USER_NAME}"
-su - ${USER_NAME} -c "git clone --branch cl25us --depth 1 https://github.com/noMoreCLI/spring-petclinic-microservices.git" 
+su - ${USER_NAME} -c "git clone --branch cl25us --depth 1 https://github.com/noMoreCLI/spring-petclinic-microservices.git"

@@ -1,0 +1,90 @@
+- name: Check .Net Agent MSI
+  ansible.windows.win_stat:
+    path: "{{ dotnet_agent_dest_folder_win }}\\{{ dotnet_agent_msi_name }}"
+  register: agent_msi_stat_result
+
+- name: Assert .Net Agent MSI exists
+  ansible.builtin.assert:
+    that: agent_msi_stat_result.stat.exists
+    msg: ".Net Agent MSI was not found: {{ dotnet_agent_dest_folder_win }}\\{{ dotnet_agent_msi_name }}"
+
+- name: Check AD_Setup file
+  ansible.windows.win_stat:
+    path: "{{ dotnet_agent_dest_folder_win }}\\{{ dotnet_agent_ad_setup_xml_name }}"
+  register: ad_setup_stat_result
+
+- name: Assert AD_Setup file exists
+  ansible.builtin.assert:
+    that: ad_setup_stat_result.stat.exists
+    msg: "AD_Setup file was not found: {{ dotnet_agent_dest_folder_win }}\\{{ dotnet_agent_ad_setup_xml_name }}"
+
+- block:
+    - name: Install .Net Agent MSI package
+      ansible.windows.win_package:
+        path: "{{ dotnet_agent_dest_folder_win }}\\{{ dotnet_agent_msi_name }}"
+        arguments: "AD_SetupFile={{ dotnet_agent_dest_folder_win }}\\{{ dotnet_agent_ad_setup_xml_name }}"
+        log_path: "{{ dotnet_agent_dest_folder_win }}/InstallLogs.txt"
+        state: present
+      register: install_agent_result
+      notify:
+        - Restart and verify .NET agent listener
+        - Restart app listener
+
+    - name: Install .Net Agent MSI result
+      ansible.builtin.debug:
+        var: install_agent_result
+  rescue:
+    - name: Set .Net Agent MSI Result Fact
+      ansible.builtin.set_fact:
+        appdynamics_agent_result:
+          app: null
+          tier: null
+          node: null
+          error: true
+          install_path: null
+          agent_type: '{{ agent_type }}'
+          agent_version: '{{ dotnet_msi_agent_version }}'
+          action: '{{ agent_action }}'
+
+    - name: appdynamics.agent.result
+      ansible.builtin.debug:
+        msg: '{{ appdynamics_agent_result | to_json }}'
+
+    - name: Get Install logs
+      ansible.windows.win_shell: 'Get-Content {{ dotnet_agent_dest_folder_win }}/InstallLogs.txt -Tail 30'
+      register: install_logs
+
+    - name: Get Winston.txt logs
+      ansible.windows.win_shell: 'Get-Content {{ DOTNETAGENT_DIR }}\Logs\Winston.txt -Tail 30'
+      register: winston
+
+    - name: Fail
+      ansible.builtin.debug:
+        msg:
+        - "Failed to install .Net Agent MSI"
+        - "Winston.txt logs: {{ winston.stdout | regex_replace('\\r\\n', '') }}"
+        - "Install logs: {{ install_logs.stdout | regex_replace('\\r\\n', '') }}"
+
+    - name: Auto Rollback .Net Agent MSI
+      ansible.builtin.include_tasks: rollback_dotnet_agent.yml
+
+- name: Check custom config
+  ansible.windows.win_stat:
+    path: "{{ dotnet_agent_dest_folder_win }}\\{{ dotnet_agent_config_xml_name }}"
+  register: custom_config_stat_result
+
+- name: Update custom config
+  ansible.windows.win_copy:
+    src: "{{ dotnet_agent_dest_folder_win }}\\{{ dotnet_agent_config_xml_name }}"
+    dest: "{{ DOTNETAGENT_CONFIG_FILE_PATH }}"
+    remote_src: "true"
+    force: yes
+  when: custom_config_stat_result.stat.exists
+
+# Updating agent logging is currently not supported
+#- name: Set the log level on the agent (if != info, which it is by default)
+#  ansible.builtin.include_role:
+#    name: appdynamics.agents.logger
+#  vars:
+#    logger_must_check_if_agent_dir_exists: false
+#  # when: agent_log_level|lower != 'info'

@@ -1,0 +1,58 @@
+---
+- name: Agent uninstall status report
+  become: true
+  block:
+    - name: Verify is agent is installed in php modules
+      ansible.builtin.shell: "{{ php_path }} -m | grep appdynamics_agent"
+      register: agent_module_check
+      changed_when: false
+      ignore_errors: true
+
+    - name: Verify if php ini file is configured successfully
+      ansible.builtin.shell: "{{ php_path }} -i | grep 'Loaded Configuration File' | awk '{print $NF}' | xargs dirname | xargs -I{} find {} -name {{ ini_file_name }}"
+      register: config_path
+      changed_when: false
+      ignore_errors: true
+    
+    - name: Check if agent directory is absent
+      ansible.builtin.stat:
+        path: "{{ agent_path }}"
+      register: agent_dir_check
+
+    - name: Find backed up agent files from backup dir
+      ansible.builtin.find:
+        path: "{{ php_agent_backup_folder_linux }}"
+        patterns: 'agent*'
+      register: backup_files
+
+    - name: Set backup count
+      ansible.builtin.set_fact:
+        agentfiles: "{{ backup_files.files if backup_files is defined else [] }}"
+
+    - name: Check if backup is removed conditonally 
+      ansible.builtin.stat:
+        path: "{{ php_agent_backup_folder_linux }}"
+      register: backup_dir_check
+      when: not keep_backup
+    
+    - name: Check if backup is present conditonally 
+      ansible.builtin.stat:
+        path: "{{ php_agent_backup_folder_linux }}"
+      register: backup_dir_check
+      when: keep_backup
+
+    - name: Transform Playbook run information to standard format
+      ansible.builtin.set_fact:
+        run_info:
+          playbook_run_summary: "This Run was related to Agent {{ agent_action }}"
+          backup_count_on_target: "{{ agentfiles | count }}"
+          zts_support: "{{ zts_support }}"
+          keep_backup: "{{ keep_backup }}"
+    
+    - name: Print Run information
+      ansible.builtin.debug:
+        msg: "{{ run_info }}"
+
+    - name: appdynamics_agent_status php
+      ansible.builtin.debug:
+        msg: "{{ run_info | to_nice_json }}"

@@ -1,0 +1,40 @@
+- name: Autogenerate Appdynamics names facts
+  appd_facts:
+    strategy: jboss    # supported auto naming strategies are: tomcat, jboss, default
+    path: "{{ jboss_config }}"   # optional: path to the framework
+    preferred_appname: "{{ application_name }}"
+  register: appd
+- ansible.builtin.debug:
+    msg: "appd facts || app={{ appd.ansible_facts.appdynamics.app }} tier={{ appd.ansible_facts.appdynamics.tier }} node={{ appd.ansible_facts.appdynamics.node }}"
+
+- name: Add appd instrumentation to jboss
+  become: yes
+  ansible.builtin.replace:
+    path: "{{ jboss_config }}"
+    regexp: '^(?:.*export APPD(?:.|\s)+?\s*)?\s*while\s+true;\s*do\s*(if\s*\[.+LAUNCH_JBOSS_IN_BACKGROUND.+)'
+    replace: |-
+      export APPDYNAMICS_AGENT_APPLICATION_NAME="{{ application_name if (application_name is defined) and (application_name|length >0) else appd.ansible_facts.appdynamics.app }}"
+      export APPDYNAMICS_AGENT_TIER_NAME="{{ tier_name if (tier_name is defined) and (tier_name|length > 0) else appd.ansible_facts.appdynamics.tier }}"
+      export APPDYNAMICS_AGENT_NODE_NAME="{{ node_name if (node_name is defined) and (node_name|length > 0) else appd.ansible_facts.appdynamics.node }}"
+      export JAVA_OPTS="$JAVA_OPTS -Djboss.modules.system.pkgs=org.jboss.byteman,com.singularity"
+      export JAVA_OPTS="$JAVA_OPTS -javaagent:{{ java_agent_dest_folder_linux }}/javaagent.jar{{ ' -Dappdynamics.http.proxyHost=' + proxy_host if enable_proxy else '' }}{{ ' -Dappdynamics.http.proxyPort=' + proxy_port if enable_proxy else '' }}{{ ' -Dappdynamics.agent.version=' + agent_version }}"
+      while true;do
+      \1
+    backup: "{{ backup | bool }}"
+  notify: Restart app listener
+
+- name: agent start up result set fact
+  ansible.builtin.set_fact:
+    agent_result:
+      app: "{{ application_name | default(appd.ansible_facts.appdynamics.app) }}"
+      tier: "{{ tier_name | default(appd.ansible_facts.appdynamics.tier) }}"
+      node: "{{ node_name | default(appd.ansible_facts.appdynamics.node) }}"
+      error: false
+      install_path: "{{ java_agent_dest_folder | default('') }}"
+      agent_type: "{{ agent_type | default('java') }}"
+      agent_version: "{{ agent_version | default('') }}"
+      action: "{{ agent_action | default('') }}"
+
+- name: appdynamics.agent.result
+  ansible.builtin.debug:
+    msg: "{{ agent_result | to_json }}"

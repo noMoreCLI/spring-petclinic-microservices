@@ -1,0 +1,17 @@
+{
+    "enable_ssl": "agent.controller.ssl.enabled",
+    "controller_account_name": "agent.accountName",
+    "controller_account_access_key": "agent.accountAccessKey",
+    "controller_host": "agent.controller.hostName",
+    "controller_port": "agent.controller.port",
+    "applicaion_name": "agent.applicationName",
+    "tier_name": "agent.tierName",
+    "node_name": "agent.nodeName",
+    "proxy_host": "agent.http.proxyHost",
+    "proxy_port": "agent.http.proxyPort",
+    "proxy_user": "agent.http.proxyUser",
+    "proxy_password_file": "agent.http.proxyPasswordFile",
+    "proxy_ctrl_dir": "agent.proxy_ctrl_dir",
+    "enable_cli": "agent.cli_enabled",
+    "enable_cli_long_running": "agent.cli_long_running"
+}

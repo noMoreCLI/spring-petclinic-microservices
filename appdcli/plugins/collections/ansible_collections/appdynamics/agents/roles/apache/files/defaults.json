@@ -1,0 +1,19 @@
+{
+    "appdynamics_enabled": "ON",
+    "appdynamics_proxy_host": "localhost",
+    "appdynamics_proxy_port": "",
+    "appdynamics_launch_proxy": "ON",
+    "appdynamics_resolve_backends": "ON",
+    "appdynamics_trace_as_error": "OFF",
+    "appdynamics_report_all_instrumented_modules": "OFF",
+    "appdynamics_backend_name_segments": "0",
+    "appdynamics_request_cache_cleanup_interval": "60000",
+    "appdynamics_mask_cookie": "OFF",
+    "appdynamics_mask_cookie_pattern": "",
+    "appdynamics_mask_sm_user": "OFF",
+    "appdynamics_delimiter": "",
+    "appdynamics_segment": "",
+    "appdynamics_match_filter": "",
+    "appdynamics_match_pattern": ""
+}
+  

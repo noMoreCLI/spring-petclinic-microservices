@@ -1,0 +1,4 @@
+---
+# vars file for python role
+python_agent_dest_file: python-agent.tar.bz2
+playbook_failed: false

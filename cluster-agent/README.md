@@ -42,7 +42,7 @@ The following variables need to be configured in the playbook or through environ
 1. Configure your inventory and variables
 2. Run the playbook:
    ```bash
-   ansible-playbook -i inventory.ini cluster-agent-install.yaml --ask-pass
+   ansible-playbook -i inventory.ini cluster-agent-install.yaml 
    ```
 
 The playbook will:

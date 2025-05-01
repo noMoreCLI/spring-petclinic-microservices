@@ -24,16 +24,6 @@ This Ansible project automates the installation and configuration of the AppDyna
 - SSH access to the target host
 - AppDynamics Controller credentials
 
-## Configuration
-
-### Inventory Setup
-
-Edit `inventory.ini` to specify your target host:
-```ini
-[appdynamics]
-198.18.134.23 ansible_user=root ansible_ssh_pass={{ ssh_password }}
-```
-
 ### Variables
 
 The following variables need to be configured in the playbook or through environment variables:

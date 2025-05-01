@@ -1,0 +1,30 @@
+- name: Agent Destination Cleanup block
+  become: "{{ run_with_root }}"
+  block:
+    - name: Find Directory in Destination Folder
+      ansible.builtin.find:
+        paths: "{{ python_agent_dest_folder }}"
+        recurse: true
+        file_type: directory
+        excludes: 'logs'
+      register: dir_to_delete
+
+    - name: Remove all Files from Directory
+      ansible.builtin.include_tasks: "cleanup-directory.yml"
+      loop: "{{ dir_to_delete.files }}"
+      loop_control:
+        loop_var: dir
+
+    - name: Find Files in Destination Folder
+      ansible.builtin.find:
+        paths: "{{ python_agent_dest_folder }}"
+        file_type: file
+        excludes: "{{ config_file_name }}"
+      register: files_to_delete
+
+    - name: Remove all Files from Agent Destination
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: absent
+      with_items: "{{ files_to_delete.files }}"
+      changed_when: false

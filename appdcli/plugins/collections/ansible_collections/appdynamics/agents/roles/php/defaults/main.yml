@@ -1,0 +1,37 @@
+---
+# defaults file for php
+agent_dir_permission:
+  user: "{{ appdynamics_user }}"
+  group: "{{ appdynamics_group }}"
+php_agent_dest_file: php-agent.tar.bz2
+php_binary_name: "{{ php_executable_path | default('') }}/php"
+agent_config_file: config.yaml
+ini_file_name: appdynamics_agent.ini
+zts_support: false
+playbook_failed: false
+create_appdynamics_user: true
+install_action: ['{{ install_string }}', '{{ upgrade_string }}']
+agent_path: "{{ linux_custom_agent_install_path | default(php_agent_dest_folder_linux) }}"
+log_directory: '{{agent_path}}/logs'
+php_path: "{{ php_binary_name if php_executable_path is defined else 'php' }}"
+default_agent_config:
+  enable_ssl: "{{ '1' if enable_ssl is defined and enable_ssl else '' }}"
+  controller_account_name: "{{ controller_account_name }}"
+  controller_account_access_key: "{{ controller_account_access_key }}"
+  controller_host: "{{ controller_host_name }}"
+  controller_port: "{{ controller_port }}"
+  applicaion_name: "{{ application_name | default('') }}"
+  tier_name: "{{ tier_name | default('') }}"
+  node_name: "{{ node_name | default('') }}"
+  proxy_host: "{{ proxy_host | default('') }}"
+  proxy_port: "{{ proxy_port | default('') }}"
+  proxy_user: "{{ proxy_user | default('') }}"
+  proxy_password_file: "{{ proxy_password_file | default('') }}"
+  proxy_ctrl_dir: "{{ proxy_ctrl_dir | default('') }}"
+  enable_cli: "{{ 'On' if enable_cli is defined and enable_cli else '' }}"
+  enable_cli_long_running: "{{ 'On' if enable_cli_long_running is defined and enable_cli_long_running else '' }}"
+  log_directory: "{{ log_directory | default('') }}"
+  agent_log_level: "{{ agent_log_level | default('') }}"
+
+# Error flag
+error_status: false

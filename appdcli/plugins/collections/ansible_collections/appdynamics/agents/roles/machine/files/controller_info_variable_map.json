@@ -1,0 +1,13 @@
+{
+    "controller_host_name" : "controller-host",
+    "controller_port" : "controller-port",
+    "enable_ssl" : "controller-ssl-enabled",
+    "host_name" : "unique-host-id",
+    "sim_enabled" : "sim-enabled",
+    "machine_hierarchy" : "machine-path",
+    "application_name" : "application-name",
+    "tier_name" : "tier-name",
+    "node_name" : "node-name",
+    "account_name" : "account-name",
+    "account_access_key" : "account-access-key"
+}

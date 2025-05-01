@@ -1,0 +1,239 @@
+- name: Agent Linux Block
+  become: true
+  block:
+    - name: Autogenerate appdynamics facts
+      appdynamics.agents.appd_facts:
+        strategy: default   # supported auto naming strategies are: tomcat, jboss, default
+      register: appd
+
+    - name: Set the Installation path fact
+      ansible.builtin.set_fact:
+        apache_agent_dest_folder: "{{ agent_path }}"
+        apache_agent_dest_file: "{{ apache_agent_dest_file }}"
+
+    - name: Check if Apache is installed and detect its version
+      ansible.builtin.shell:
+        cmd: |
+          apachectl -v
+      register: version
+      changed_when: false
+      failed_when: "'not found' in version.stderr"
+
+    - name: Discover installed apache version
+      ansible.builtin.set_fact:
+        apache_version: "{{ version.stdout | regex_search('Apache.2.\\d') }}"
+
+    - ansible.builtin.debug:
+        msg:
+          - "Apache webserver version {{ apache_version }} found"
+
+    - name: Changing libzmq version
+      when: (agent_action | lower == install_string or agent_action | lower == upgrade_string)
+      block: 
+        - name: Get the major version of downloaded agent
+          ansible.builtin.set_fact:
+            agent_major_version: "{{ download_agent_version.split('.')[0] if agent_version == 'latest' else agent_version.split('.')[0] }}"
+          
+
+        - name: Set file names if agent major version greater than 23.x
+          ansible.builtin.set_fact:
+            zmq_version_file_name: "{{ libzmq_version_23x }}"
+            libuuid_remove_required: true
+          when: agent_major_version|int >= 23
+
+        - name: Set file names if agent major lesser than 23.x
+          ansible.builtin.set_fact:
+            zmq_version_file_name: "{{ libzmq_version_22x }}"
+            libuuid_remove_required: false
+          when: agent_major_version|int < 23
+
+    - name: Check if agent exists
+      ansible.builtin.stat:
+        path: "{{ apache_agent_dest_folder }}/appdynamics-sdk-native/VERSION.txt"
+      register: previous_agent
+
+    - name: Install or upgrade
+      when: (agent_action | lower == 'install' or agent_action | lower == 'upgrade')
+      block:
+        - name: Ensures agent dir exists
+          ansible.builtin.file:
+            path: "{{ apache_agent_dest_folder }}"
+            state: directory
+            mode: "0755"
+            recurse: true
+          changed_when: false
+
+        - name: Take Backup
+          ansible.builtin.include_tasks: backup.yml
+
+        - name: Cleanup old agent
+          ansible.builtin.include_tasks: cleanup-agent.yml
+
+        - ansible.builtin.debug:
+            msg: "Fetching Agent located at {{ agent_location }} through {{ download_protocol }} transfer"
+
+        - ansible.builtin.include_role:
+            name: appdynamics.agents.fetch_agent
+          vars:
+            agent_destination_path: "{{ apache_agent_dest_folder }}/{{ apache_agent_dest_file }}"
+            agent_source_location: "{{ agent_location }}"
+            fetch_protocol: "{{ agent_download_protocol }}"
+
+        - name: Unzip the agent file
+          ansible.builtin.unarchive:
+            src: "{{ apache_agent_dest_folder }}/{{ apache_agent_dest_file }}"
+            dest: "{{ apache_agent_dest_folder }}"
+            mode: "0755"
+            remote_src: true
+          changed_when: false
+
+        - name: Remove downloaded file
+          ansible.builtin.file:
+            path: "{{ apache_agent_dest_folder }}/{{ apache_agent_dest_file }}"
+            state: absent
+          changed_when: false
+
+        - name: Decide agent binary
+          ansible.builtin.set_fact:
+            agent_binary: "{{ 'libmod_appdynamics.so' if apache_version == 'Apache/2.4' else 'libmod_appdynamics22.so' }}"
+
+        - name: Merge Configs
+          ansible.builtin.include_tasks: merge-config.yml
+        
+        - name: Configure agent's appdynamics_agent.conf file in custom location
+          ansible.builtin.template:
+            src: templates/appdynamics_agent.conf.j2
+            dest: "{{ custom_agent_config_path }}"
+            mode: "0755"
+          when: custom_agent_config_path is defined
+
+        - name: Configure agent's appdynamics_agent.conf file
+          ansible.builtin.template:
+            src: templates/appdynamics_agent.conf.j2
+            dest: '{{ apache_agent_dest_folder }}/appdynamics-sdk-native/conf/appdynamics_agent.conf'
+            mode: "0755"
+          when: custom_agent_config_path is not defined
+
+        - name: Run the install.sh command
+          ansible.builtin.command:
+            chdir: '{{ apache_agent_dest_folder }}/appdynamics-sdk-native'
+            cmd: ./install.sh
+          register: output
+          changed_when: false
+
+        - ansible.builtin.debug:
+            msg:
+              - "Apache agent installed"
+
+        - name: Update log level
+          ansible.builtin.replace:
+            path: '{{ apache_agent_dest_folder }}/appdynamics-sdk-native/conf/appdynamics_sdk_log4cxx.xml'
+            regexp: 'value="info"'
+            replace: 'value="{{ agent_log_level }}"'
+
+        - name: Update the apache conf file
+          ansible.builtin.lineinfile:
+            path: '{{ apache_conf_path }}'
+            regexp: '.*appdynamics_agent.conf'
+            line: 'Include {{ apache_agent_dest_folder }}/appdynamics-sdk-native/conf/appdynamics_agent.conf'
+            state: present
+          when: custom_agent_config_path is not defined
+        
+        - name: Update the apache env file
+          ansible.builtin.lineinfile:
+            path: '{{ apache_env_path_debain }}'
+            regexp: '^export LD_LIBRARY_PATH='
+            line: 'export LD_LIBRARY_PATH={{ apache_agent_dest_folder }}/appdynamics-sdk-native/sdk_lib/lib'
+            state: present
+          when: "ansible_os_family == 'Debian'"
+
+        - name: Symbolic link for libcrypt.so files
+          when: "ansible_os_family == 'Debian'"
+          block:
+            - name: Find file path for libcrypt.so file
+              ansible.builtin.shell: echo "$(ldconfig -p | grep libcrypt.so.1 | tr ' ' '\n' | grep /)"
+              register: libcrypt_file_path_out
+              ignore_errors: true
+              changed_when: false
+
+            - name: Checking for valid path for libcrypt.so file
+              ansible.builtin.set_fact:
+                libcrypt_file_path: "{{ libcrypt_file_path_out.stdout if libcrypt_file_path_out.stdout.split('/')[-1] == 'libcrypt.so.1' else default_libcrypt_file_path }}"
+              ignore_errors: true
+
+            - name: Creating a symbolic link for libcrypt.so
+              ansible.builtin.file:
+                src: "{{ libcrypt_file_path }}"
+                dest: "{{ libcrypt_file_path | dirname }}/{{ libcrypt_file_name }}"
+                state: link
+                force: yes
+              ignore_errors: true
+
+    # get Apache Agent from Rollback
+    - name: This is a Rollback, Fetch apache agent from backup
+      ansible.builtin.include_tasks: rollback.yml
+      when: (agent_action|lower == 'rollback')
+
+    - name: Uninstall agent
+      ansible.builtin.include_tasks: uninstall.yml
+      when: (agent_action | lower == 'uninstall')
+    
+    - name: Notifying Agent State to Handler
+      ansible.builtin.debug:
+        msg: "Notifying handler for successful Agent {{ agent_action }}"
+      changed_when: true
+      notify: "Verify apache agent state"
+
+
+  rescue:
+    # Error occured during installation, put back the agent present before installation
+    - name: Setting error status
+      ansible.builtin.set_fact:
+        error_status: true
+
+    - name: Notifying Agent State to Handler
+      ansible.builtin.debug:
+        msg: "Notifying handler as Exception occurred"
+      changed_when: true
+      notify: "Set Exception Logs"
+    
+    - name: Printing to output file when error occured during installation
+      ansible.builtin.debug: # print this in csv file
+        msg: 'Error occured during installation/rollback on task - {{ ansible_failed_task.name }} '
+
+    - name: Rescue called Rollback
+      ansible.builtin.include_tasks: rollback.yml
+      when: (agent_action | lower in install_action and backup_success is defined)
+    
+    - name: Clean Destination folder if fresh install
+      ansible.builtin.include_tasks: cleanup-agent.yml
+      when: (agent_action | lower == install_string and linux_custom_agent_install_path is not defined)
+
+  always:
+    - name: Remove temporary config
+      ansible.builtin.file:
+        path: "/tmp/appdynamics_agent.conf"
+        state: absent
+    
+    - when: (agent_action|lower != 'uninstall' and apache_version is defined)
+      block:
+        - name: Recursively change ownership of the agent directory
+          ansible.builtin.file:
+            path: "{{ apache_agent_dest_folder }}"
+            recurse: true
+            owner: "{{ agent_dir_permission.user }}"
+            group: "{{ agent_dir_permission.group }}"
+          changed_when: false
+
+        - name: Check backup directory
+          ansible.builtin.stat:
+            path: "{{ apache_agent_backup_folder_linux }}"
+          register: backup_dir
+
+        - name: Cleanup backup
+          when: backup_dir.stat.exists
+          ansible.builtin.include_role:
+            name: common
+            tasks_from: remove_backup_based_on_max_count # run common/tasks/remove_backup_based_on_max_count.yaml
+          vars:
+            agent_backup_folder: "{{ apache_agent_backup_folder_linux }}"

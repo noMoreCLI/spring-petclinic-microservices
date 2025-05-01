@@ -1,0 +1,30 @@
+- name: Set .Net Agent MSI Version for Result
+  when: download_uri is not defined
+  ansible.builtin.set_fact:
+    dotnet_msi_agent_version: "{{ agent_version }}"
+
+# uninstall the Agent first to make sure the current agent will be backed up (required for rollback)
+- name: Uninstall current .Net Agent MSI if needed
+  ansible.builtin.include_tasks: uninstall_dotnet_agent.yml
+
+- name: Ensure .Net Agent MSI temp directory exists and empty
+  ansible.windows.win_file:
+    path: "{{ dotnet_agent_dest_folder_win }}\\"
+    state: "{{ item }}"
+  loop:
+    - absent
+    - directory
+
+- name: Download .NET Agent MSI
+  ansible.builtin.include_role:
+    name: appdynamics.agents.fetch_agent
+  vars:
+    agent_source_location: "{{ agent_location }}"
+    agent_destination_path: "{{ dotnet_agent_dest_folder_win }}\\{{ dotnet_agent_msi_name }}"
+    fetch_protocol: "{{ agent_download_protocol }}"
+
+- name: Prepare .Net Agent MSI configuration
+  ansible.builtin.include_tasks: prepare_configuration.yml
+
+- name: Install .Net Agent MSI
+  ansible.builtin.include_tasks: install_dotnet_agent.yml

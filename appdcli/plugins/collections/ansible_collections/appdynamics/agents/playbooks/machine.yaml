@@ -1,0 +1,28 @@
+---
+- name: Install machine agent
+  hosts: localhost
+  tasks:
+    - name: Include variables for the controller settings
+      ansible.builtin.include_vars:
+        # Include all yaml files under the vars directory
+        dir: vars
+        extensions:
+          - 'yaml'
+          - 'yml'
+    - ansible.builtin.include_role:
+        name: appdynamics.agents.machine
+      vars:
+        # Define Agent Type and Version
+        agent_version: 22.6.0
+        agent_type: machine
+        agent_action: install
+        sim_enabled: "true"
+        autostart_agent: "true"
+        # install_smart_agent: "true"
+        # smart_agent_artifact_path: "/vagrant/appdsmartagent_23.10.0-999_amd64.deb"
+        # smart_agent_port: 9000
+        # smart_agent_auto_start: true
+        # smart_agent_action: install
+
+#        linux_custom_agent_install_path: /opt/appdynamics/machine_agent
+#        windows_custom_agent_install_path: C:\appdynamics\machine_agent

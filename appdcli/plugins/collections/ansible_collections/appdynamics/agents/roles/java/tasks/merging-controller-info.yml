@@ -1,0 +1,176 @@
+---
+- block:
+  # Creating a dict with variables names and corresponding controller tags
+  - ansible.builtin.set_fact:
+      java_merge_finished: false
+
+  - name: Load controller-info variable map
+    ansible.builtin.set_fact:
+      controller_info_variable_map: "{{ lookup('file', '{{ role_path }}/files/controller_info_variable_map.json') | from_json }}"
+
+  # Creating a dict of all the variables mentioned in args.yaml
+  - name: Adding defined variable in list
+    vars:
+      defined_controller_variables: {}
+    ansible.builtin.set_fact:
+      defined_controller_variables: "{{ defined_controller_variables | combine({item.key: lookup('ansible.builtin.vars', item.key)}) }}"
+    loop: "{{ lookup('dict', controller_info_variable_map) }}"
+    when: lookup('ansible.builtin.varnames', item.key)
+
+  # Fetching controller-info from managed node to control node
+  - name: Storing in a path relative to the playbook
+    ansible.builtin.fetch:
+      src: "{{ java_agent_dest_folder }}/conf/controller-info.xml"
+      dest: java-temp/controller-info-{{ inventory_hostname }}
+      flat: yes
+
+  - name: Read application name from controller-info
+    community.general.xml:
+      path: java-temp/controller-info-{{ inventory_hostname }}
+      xpath: '/controller-info/application-name'
+      content: text
+    register: controller_info_application_name
+    vars:
+      ansible_become: false
+    delegate_to: localhost
+
+  - name: Read tier name from controller-info
+    community.general.xml:
+      path: java-temp/controller-info-{{ inventory_hostname }}
+      xpath: '/controller-info/tier-name'
+      content: text
+    register: controller_info_tier_name
+    vars:
+      ansible_become: false
+    delegate_to: localhost
+
+  - name: Read node name from controller-info
+    community.general.xml:
+      path: java-temp/controller-info-{{ inventory_hostname }}
+      xpath: '/controller-info/node-name'
+      content: text
+    register: controller_info_node_name
+    vars:
+      ansible_become: false
+    delegate_to: localhost
+
+  - name: Read SSL enabled value from controller-info
+    community.general.xml:
+      path: java-temp/controller-info-{{ inventory_hostname }}
+      xpath: '/controller-info/controller-ssl-enabled'
+      content: text
+    register: controller_info_ssl_enabled
+    vars:
+      ansible_become: false
+    delegate_to: localhost
+
+  # Updating new values to the controller-info
+  - name: Change key on controller xml file
+    community.general.xml:
+      path: java-temp/controller-info-{{ inventory_hostname }}
+      xpath: '/controller-info/{{ controller_info_variable_map[item.key] }}'
+      value: '{{ item.value | string }}'
+    delegate_to: localhost
+    vars:
+      ansible_become: false
+    loop: "{{ lookup('dict', defined_controller_variables) }}"
+
+  - name: Setting App name to default if undefined
+    ansible.builtin.set_fact:
+      temp_application_name: ""
+    when: application_name is not defined
+
+  - name: Setting Node name to default if undefined
+    ansible.builtin.set_fact:
+      temp_node_name: ""
+    when: node_name is not defined
+
+  - name: Setting Tier name to default if undefined
+    ansible.builtin.set_fact:
+      temp_tier_name: ""
+    when: tier_name is not defined
+
+  - name: Setting App name to value if defined
+    ansible.builtin.set_fact:
+      temp_application_name: "{{ application_name }}"
+    when: application_name is defined
+
+  - name: Setting Node name to value if defined
+    ansible.builtin.set_fact:
+      temp_node_name: "{{ node_name }}"
+    when: node_name is defined
+
+  - name: Setting Tier name to value if defined
+    ansible.builtin.set_fact:
+      temp_tier_name: "{{ tier_name }}"
+    when: tier_name is defined
+
+  - name: If App, tier, node name and enable_ssl were already defined, retain them
+    when: (item.new_config == "" or (item.new_config == item.default and item.old_config[0] != None))
+    community.general.xml:
+      path: java-temp/controller-info-{{ inventory_hostname }}
+      xpath: '/controller-info/{{ item.key }}'
+      value: '{{ item.old_config[0] }}'
+    with_items:
+      - { key: "application-name", old_config: "{{ controller_info_application_name.matches[0].values() }}",
+          new_config: "{{ temp_application_name }}", default: "{{ appd.ansible_facts.appdynamics.app }}" }
+      - { key: "node-name", old_config: "{{ controller_info_node_name.matches[0].values() }}",
+          new_config: "{{ temp_node_name }}", default: "{{ appd.ansible_facts.appdynamics.node }}" }
+      - { key: "tier-name", old_config: "{{ controller_info_tier_name.matches[0].values() }}",
+          new_config: "{{ temp_tier_name }}", default: "{{ appd.ansible_facts.appdynamics.tier }}" }
+      - { key: "controller-ssl-enabled", old_config: "{{ controller_info_ssl_enabled.matches[0].values() }}",
+          new_config: "{{ enable_ssl | bool }}", default: False }
+    delegate_to: localhost
+    vars:
+      ansible_become: false
+
+  # Sending controller-info back to managed node
+  - name: Transfering controller-info back to managed nodes
+    ansible.builtin.copy:
+      src: java-temp/controller-info-{{ inventory_hostname }}
+      dest: "{{ java_agent_dest_folder }}/conf/controller-info.xml"
+
+  # Deleting corresponding controller-info file
+  - name: Delete controller files
+    ansible.builtin.file:
+      state: absent
+      path: java-temp/controller-info-{{ inventory_hostname }}
+    delegate_to: localhost
+    vars:
+      ansible_become: false
+
+  # Check if any controller-info files are present
+  - name: Check if localhost has controller-info.xml files
+    ansible.builtin.find:
+      paths: java-temp
+    delegate_to: localhost
+    register: filesFound
+    vars:
+      ansible_become: false
+
+  # If folder is empty, delete the folder
+  - name: Check if folder is empty
+    ansible.builtin.file:
+      state: absent
+      path: java-temp
+    delegate_to: localhost
+    vars:
+      ansible_become: false
+    when: filesFound.matched == 0
+
+  # Copying controller-info.xml from /conf to /ver/conf for Linux
+  - name: Copy controller-info.xml to the versioned agent folder
+    ansible.builtin.shell: cp {{ java_agent_dest_folder }}/conf/controller-info.xml  {{ java_agent_ver_folder }}/conf/
+    changed_when: false
+    when: >
+      (ansible_os_family == 'RedHat' or ansible_os_family == 'Debian' or  ansible_os_family == 'Suse')
+
+  # Copying controller-info.xml from /conf to /ver/conf for Windows
+  - name: Copy controller-info.xml to the versioned agent folder
+    ansible.windows.win_shell: "Copy-Item  {{ java_agent_dest_folder }}/conf/controller-info.xml  {{ java_agent_ver_folder }}/conf/ -Force"
+    changed_when: false
+    when: >
+      ansible_os_family == 'Windows'
+
+  - ansible.builtin.set_fact:
+      java_merge_finished: true

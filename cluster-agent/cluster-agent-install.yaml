@@ -1,0 +1,127 @@
+---
+- name: Install AppDynamics Cluster Agent with Helm and Java Auto-Instrumentation
+  hosts: 198.18.134.23
+  become: yes
+  gather_facts: yes
+  vars_files:
+    - vars/secrets.yaml
+    - vars/appd-cluster-agent.yaml
+  vars:
+    values_file_path: "/tmp/cluster-agent-values.yaml"
+    helm_release_name: "appdynamics-cluster-agent"
+    appdynamics_namespace: "appdynamics"
+
+  pre_tasks:
+    - name: Debug variables
+      debug:
+        msg:
+          - "Controller URL: {{ controller_url }}"
+          - "Controller Account: {{ controller_account }}"
+          - "App Name: {{ app_name }}"
+          - "Template path: {{ playbook_dir }}/cluster-agent-values.yaml.j2"
+
+    - name: Ensure cluster agent directory exists
+      file:
+        path: /home/cisco/cl25/cluster-agent
+        state: directory
+        mode: '0755'
+
+    - name: Copy template file to remote host
+      copy:
+        src: cluster-agent-values.yaml.j2
+        dest: /home/cisco/cl25/cluster-agent/cluster-agent-values.yaml.j2
+        mode: '0644'
+
+    - name: Verify template content
+      command: "cat /home/cisco/cl25/cluster-agent/cluster-agent-values.yaml.j2"
+      register: template_content
+      changed_when: false
+
+    - name: Display template content
+      debug:
+        var: template_content.stdout_lines
+
+    - name: Verify Kubernetes cluster access
+      kubernetes.core.k8s_info:
+        kind: Node
+      register: k8s_check
+      failed_when: k8s_check.failed
+      changed_when: false
+
+    - name: Verify Helm is installed
+      command: helm version
+      register: helm_check
+      failed_when: helm_check.rc != 0
+      changed_when: false
+
+  tasks:
+    - name: Add AppDynamics Helm chart repository
+      community.kubernetes.helm_repository:
+        name: appdynamics-cloud-helmcharts
+        repo_url: https://appdynamics.jfrog.io/artifactory/appdynamics-cloud-helmcharts/
+      register: helm_repo_result
+      failed_when: helm_repo_result.failed
+
+    - name: Create AppDynamics namespace
+      kubernetes.core.k8s:
+        name: "{{ appdynamics_namespace }}"
+        api_version: v1
+        kind: Namespace
+        state: present
+      register: namespace_result
+      failed_when: namespace_result.failed
+
+    - name: Create Cluster Agent values file
+      template:
+        src: "{{ playbook_dir }}/cluster-agent-values.yaml.j2"
+        dest: "{{ values_file_path }}"
+        mode: '0644'
+      register: template_result
+      failed_when: template_result.failed
+
+    - name: Debug values file content
+      command: "cat {{ values_file_path }}"
+      register: values_content
+      changed_when: false
+
+    - name: Display values file content
+      debug:
+        var: values_content.stdout_lines
+
+    - name: Install Cluster Agent with Helm
+      community.kubernetes.helm:
+        name: "{{ helm_release_name }}"
+        chart_ref: appdynamics-cloud-helmcharts/cluster-agent
+        release_namespace: "{{ appdynamics_namespace }}"
+        values_files:
+          - "{{ values_file_path }}"
+        wait: true
+        timeout: 300s
+      register: helm_result
+      failed_when: helm_result.failed
+
+    - name: Check Cluster Agent deployment status
+      kubernetes.core.k8s_info:
+        api_version: apps/v1
+        kind: Deployment
+        namespace: "{{ appdynamics_namespace }}"
+        name: "appdynamics-operator"
+      register: deployment_status
+      retries: 5
+      delay: 30
+      until: deployment_status.resources | length > 0 and deployment_status.resources[0].status.readyReplicas == deployment_status.resources[0].status.replicas
+
+    - name: Display Cluster Agent deployment status
+      debug:
+        msg: |
+          Cluster Agent Deployment Status:
+          - Ready Replicas: {{ deployment_status.resources[0].status.readyReplicas | default(0) }}
+          - Total Replicas: {{ deployment_status.resources[0].status.replicas | default(0) }}
+          - Status: {{ 'Ready' if deployment_status.resources[0].status.readyReplicas == deployment_status.resources[0].status.replicas else 'Not Ready' }}
+      when: deployment_status.resources | length > 0
+
+    - name: Cleanup values file
+      file:
+        path: "{{ values_file_path }}"
+        state: absent
+      when: values_file_path is defined

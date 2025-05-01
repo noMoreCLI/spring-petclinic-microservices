@@ -1,0 +1,119 @@
+---
+- name: Install Appdynamics SmartAgent on Linux
+  become: true
+  block:
+
+    - name: Set zip download url
+      set_fact:
+        download_path: "/tmp/appdsmartagent_64_linux_{{ agent_ver }}.zip"
+        download_url: "{{ download_uri | default(download_url + '/appdsmartagent/' + agent_ver + '/appdsmartagent_64_linux_' + agent_ver + '.zip') }}"
+
+    - name: Download message
+      debug:
+        msg: "downloading from {{download_url}}"
+
+    - name: Copy local smartagent install file to Linux target
+      ansible.builtin.copy:
+        src: "{{ artifact_path }}"
+        dest: "{{ download_path }}"
+      when: artifact_path != ""
+
+    - name: Download file if it doesn't exist
+      ansible.builtin.get_url:
+        url: "{{ download_url }}"
+        dest: "{{ download_path }}"
+        force: true
+        url_username: "{{ lookup('env', 'CUSTOM_HTTP_USERNAME') if lookup('env', 'ENABLE_CUSTOM_HTTP') is defined and lookup('env', 'CUSTOM_HTTP_USERNAME') else omit }}"
+        url_password: "{{ lookup('env', 'CUSTOM_HTTP_PASSWORD') if lookup('env', 'ENABLE_CUSTOM_HTTP') is defined and lookup('env', 'CUSTOM_HTTP_PASSWORD') else omit }}"
+      when: not smartagent_install_file.stat.exists
+      delegate_to: localhost
+
+    - name: set artifact_path to downloaded location
+      set_fact:
+        artifact_path: "{{download_path}}"
+      when: not smartagent_install_file.stat.exists
+
+    - name: Validate smartagent install file exists in the specified path (again)
+      local_action: stat path={{ artifact_path }}
+      register: smartagent_install_file
+
+    - name: Check if artifact_path is present 
+      fail:
+        msg: "failed to find smart agent in the {{artifact_path}}"
+      when: not smartagent_install_file.stat.exists
+    
+    - name: Debug smartagent install file
+      debug:
+        msg: "using {{artifact_path}} status: {{ smartagent_install_file.stat.exists }}"
+
+    - name: Copy zip file file to remote hosts
+      ansible.builtin.copy:
+        src: "{{ artifact_path }}"
+        dest: "/tmp/"
+      when: smartagent_install_file.stat.exists
+      register: artifact_location
+      become: true
+
+    - name: Ensure smartagent directory exists
+      file:
+        path: "{{ smart_agent_dest_folder }}"
+        state: directory
+
+    - name: Install SmartAgent on Linux
+      ansible.builtin.unarchive:
+        src: "{{ artifact_location.dest }}"
+        dest: "{{ smart_agent_dest_folder }}"
+      when: smartagent_install_file.stat.exists
+
+    - name: Validate smartagent successful install
+      ansible.builtin.stat:
+        path: "{{ smart_agent_dest_folder }}/smartagent"
+      register: smartagent_binary
+  
+    - name: Fail if smartagent binary was not installed
+      ansible.builtin.fail:
+        msg: "Smartagent was not installed properly"
+      when: not ( smartagent_binary.stat.exists )
+
+    - name: Create the appd-config file with default paarameters.
+      ansible.builtin.include_tasks: create-config.yml
+
+    - name: Create and start smartagent service using smartagentctl
+      ansible.builtin.command:
+        argv:
+          - "./smartagentctl"
+          - "start"
+          - "--service"
+          - "--enable-auto-attach"
+        chdir: "{{ smart_agent_dest_folder }}"
+      when: smartagent_binary.stat.exists and smartagent_auto_start
+
+    - name: agent start up result set fact
+      ansible.builtin.set_fact:
+        agent_result:
+          error: false
+          install_path: "{{ agent_dir | default('') }}"
+          agent_type: "{{ agent_type | default('node') }}"
+          action: "{{ agent_action | default('') }}"
+
+    - name: appdynamics.agent.result
+      ansible.builtin.debug:
+        msg: "{{ agent_result | to_json }}"
+
+  rescue:
+    - name: appdynamics_agent_status Install of the SmartAgent failed
+      ansible.builtin.debug:
+         msg: 'SmartAgent installation failed. Error: {{ ansible_failed_task.name }}'
+
+    - name: agent start up result set fact
+      ansible.builtin.set_fact:
+        agent_result:
+          error: true
+          install_path: "{{ agent_dir | default('') }}"
+          agent_type: "{{ agent_type | default('node') }}"
+          action: "{{ agent_action | default('') }}"
+
+
+    - name: appdynamics.agent.result
+      ansible.builtin.debug:
+        msg: "{{ agent_result | to_json }}"

@@ -1,0 +1,11 @@
+---
+- name: Set LD_PRELOAD configuration
+  hosts: all
+  tasks:
+    - ansible.builtin.include_role:
+        name: appdynamics.agents.smartagent
+      vars:
+        agent_type: smartagent
+        agent_action: configure
+        agent_version: 23.8.0~760
+        auto_attach_config_file: "/tmp/ld_preload.json"

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<controller-info>
+    <!--  https://docs.appdynamics.com/appd/22.x/22.5/en/application-monitoring/install-app-server-agents/ibm-integration-bus-agent -->
+
+    <!-- The host name or the IP address of the AppDynamics Controller. This is the same host that
+         you use to access the AppDynamics Controller user interface. -->
+    <controller-host>{{ controller_host_name }}</controller-host>
+
+    <!-- The http(s) port of the AppDynamics Controller. If 'controller-ssl-enabled' below is set
+         to 1, you must specify the HTTPS port of the Controller, otherwise specify the HTTP port.
+         This is the same port that you use to access the AppDynamics Controller user interface. -->
+    <controller-port>{{ controller_port }}</controller-port>
+
+    <!-- Connect to the Controller using SSL(HTTPS). If you set this to 1, set the controller-port
+         property to the HTTPS port for the Controller. -->
+    <controller-ssl-enabled>{{ '1' if enable_ssl|lower == 'true' or enable_ssl|lower == '1' else '0' }}</controller-ssl-enabled>
+
+    <!-- The account name for multi-tenant Controllers. -->
+    <account-name>{{ controller_account_name }}</account-name>
+
+    <!-- The account access key. -->
+    <account-access-key>{{ controller_account_access_key }}</account-access-key>
+
+    <!-- If connection to controller via proxy, the host name or IP address of the proxy. -->
+    <controller-proxy-host>{{ controller_proxy_host }}</controller-proxy-host>
+
+    <!-- If connecting to controller via proxy, the http(s) port of the proxy. -->
+    <controller-proxy-port>{{ controller_proxy_port }}</controller-proxy-port>
+
+    <!-- If connecting to controller via proxy, the user name to access the proxy. -->
+    <controller-proxy-username>{{ controller_proxy_username }}</controller-proxy-username>
+
+    <!-- If connecting to controller via proxy, the password to access the proxy. -->
+    <controller-proxy-password>{{ controller_proxy_password }}</controller-proxy-password>
+
+    <!-- If connecting to controller via proxy, the file containing the password to access
+         the proxy. This is used only if 'controller-proxy-password' is not set'. -->
+    <controller-proxy-passwordfile>{{ controller_proxy_passwordfile }}</controller-proxy-passwordfile>
+
+    <!-- The logical business application name that this IIB server belongs to. -->
+    <application-name>{{ application_name if application_name is defined else appd.ansible_facts.appdynamics.app }}</application-name>
+
+    <!-- The name of the tier that this IIB server belongs to. -->
+    <tier-name>{{ tier_name if tier_name is defined else appd.ansible_facts.appdynamics.tier  }}</tier-name>
+
+    <!-- The user exit name setting on the IIB broker that identifies the IIB agent user exit.
+         The following are IIB restrictions on the user exit name:
+         - It must consist of alphanumberic characters only.
+         - It must be no greater than 255 characters. -->
+    <user-exit>{{ iib_user_exit }}</user-exit>
+
+    <!-- The log level controls the amount of output in the IIB agent log files. -->
+    <log-level>{{ agent_log_level }}</log-level>
+
+    <!-- The directory to store the IIB agent log files. By default this is "/tmp/appd/". -->
+    <log-dir>{{ iib_log_dir }}</log-dir>
+
+    <!-- The full path to the certificate file when connecting to the controller. If left blank
+         IIB Agent will connect with it's own root CA certificate. -->
+    <controller-cert-file>{{ iib_controller_cert_file }}</controller-cert-file>
+
+    <!-- If set to true, flow level visibility feature is enabled. Default value is disabled  -->
+    <flow-level-visibility-enabled>{{ iib_flow_level_visibility_enabled }}</flow-level-visibility-enabled>
+
+    <!-- : Set this property to reuse the node names of historical VMs for new VMs. It prevents the rapid increase of differently named nodes. See Enable the Node Name Reuse. -->
+    <node-reuse>{{ 'true' if iib_node_reuse is defined and iib_node_reuse else 'false' }}</node-reuse>
+    <!-- : Set this property to reuse the node names of historical VMs for new VMs. It prevents the rapid increase of differently named nodes. See Enable the Node Name Reuse. -->
+    <node-reuse-prefix>{{ iib_node_reuse_prefix }}</node-reuse-prefix>
+</controller-info>

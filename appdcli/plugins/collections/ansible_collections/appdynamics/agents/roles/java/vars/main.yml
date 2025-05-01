@@ -1,0 +1,5 @@
+# vars are propagated to dependencies (but defaults not)
+create_appdynamics_user: yes
+java_agent_install_path_linux: "{{ linux_custom_agent_install_path | default(java_agent_dest_folder_linux) }}"
+java_agent_install_path_windows: "{{ windows_custom_agent_install_path | default(java_agent_dest_folder_win) }}"
+java_playbook_failed: false

@@ -1,0 +1,22 @@
+---
+exclude_paths:
+  - tests/sanity/*
+  - .github
+  - galaxy.yml
+  - roles/*/molecule/*
+  - build/*
+parseable: true
+quiet: true
+rulesdir:
+  - ./rule/directory/
+#warn_list:
+# - X
+skip_list:
+  - unnamed-task
+  - var-naming
+  - risky-file-permissions
+  - command-instead-of-shell
+  - name[casing]
+  - ignore-errors
+use_default_rules: true
+verbosity: 1

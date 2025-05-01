@@ -1,0 +1,19 @@
+---
+galaxy_info:
+  author: Cisco AppDynamics
+  role_name: dotnet_msi
+  company: Cisco AppDynamics
+  description: This role installs and configures the AppDynamics .Net Agent MSI on Windows OS
+  license: Apache2
+  min_ansible_version: "2.9"
+  platforms:
+    - name: Windows
+  galaxy_tags:
+    - apm
+    - monitoring
+    - appdynamics
+    - agents
+    - dotnet
+
+dependencies:
+ - { role: common }

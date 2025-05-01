@@ -1,0 +1,74 @@
+---
+- ansible.builtin.set_fact:
+    ansible_install_agent_type: "{{ item }}"
+  when: agent_type is search(item)
+  with_items: "{{ allowed_install_env_var_values }}" # types (machine|db|java|dotnet_msi|apache|python|iib)
+
+- become: true
+  when: ansible_os_family in ['RedHat', 'Debian', 'Alpine', 'AIX']
+  block:
+    - name: Check if installation env variable already present on host
+      ansible.builtin.shell: "echo ${{ ansible_install_env_var }}"
+      changed_when: false
+      register: install_env_var_value
+
+    - ansible.builtin.debug:
+        msg: "Value of installation type env. variable before setting = {{ install_env_var_value.stdout }}"
+
+    - when: not (install_env_var_value.stdout is search(ansible_install_agent_type)) #when agent type not present already
+      block:
+        - ansible.builtin.set_fact:
+            ansible_install_agent_type: "{{ install_env_var_value.stdout }},{{ ansible_install_agent_type }}"
+          when: install_env_var_value.stdout | length != 0
+
+        - ansible.builtin.stat:
+            path: "/etc/environment"
+          register: environment_file
+        
+        - ansible.builtin.file:
+            path: "/etc/environment"
+            state: touch
+          when: not environment_file.stat.exists
+
+        - ansible.builtin.lineinfile: # set env variable system wide
+            path: "/etc/environment"
+            line: "{{ ansible_install_env_var }}={{ ansible_install_agent_type }}"
+            regexp: "^{{ ansible_install_env_var }}(.*)$"
+            state: present
+
+    - ansible.builtin.shell: "echo ${{ ansible_install_env_var }}"
+      register: install_env_var_value
+      changed_when: false
+
+    - ansible.builtin.debug:
+        msg: "Value of installation type env variable - {{ install_env_var_value.stdout }}"
+
+- when: ansible_os_family == 'Windows'
+  block:
+    - name: Check if installation env variable already present on host
+      ansible.windows.win_shell: "[System.Environment]::GetEnvironmentVariable('{{ ansible_install_env_var }}')"
+      changed_when: false
+      register: install_env_var_value
+
+    - ansible.builtin.debug:
+        msg: "Value of installation type env. variable before setting = {{ install_env_var_value.stdout_lines }}"
+
+    - when: install_env_var_value.stdout_lines | count == 0 or (not install_env_var_value.stdout_lines[0] is search(ansible_install_agent_type))
+      block:
+        - ansible.builtin.set_fact:
+            ansible_install_agent_type: "{{ install_env_var_value.stdout_lines[0] }},{{ ansible_install_agent_type }}"
+          when: install_env_var_value.stdout_lines | count > 0 and install_env_var_value.stdout_lines[0] | length != 0
+
+        - ansible.windows.win_environment: # set env variable on machine level
+            state: present
+            level: machine
+            name: "{{ ansible_install_env_var }}"
+            value: "{{ ansible_install_agent_type }}"
+
+#   - win_shell: "Get-ChildItem -Path Env:/{{ installation_type_env_var }}"
+    - ansible.windows.win_shell: "[System.Environment]::GetEnvironmentVariable('{{ ansible_install_env_var }}')"
+      changed_when: false
+      register: install_env_var_value
+
+    - ansible.builtin.debug:
+        msg: "Value of installation type env variable - {{ install_env_var_value.stdout_lines[0] }}"

@@ -1,0 +1,135 @@
+---
+- name: Uninstall Appdynamics SmartAgent
+  become: true
+  block:
+    - name: Uninstall AppDynamics SmartAgent on Linux
+      block:
+        - name: Stop SmartAgent
+          ansible.builtin.command:
+            argv:
+              - "./smartagentctl"
+              - "stop"
+            chdir: "{{ smart_agent_dest_folder }}"
+          register: stop_output
+
+        - name: Make sure smartagent stop ran succesfully
+          fail:
+            msg: "failed to stop smartagent, the process returned {{ stop_output.rc }}"
+          when: stop_output.rc != 0
+
+        - name: Clean SmartAgent Environment Variables
+          ansible.builtin.command:
+            argv:
+              - "./smartagentctl"
+              - "clean"
+            chdir: "{{ smart_agent_dest_folder }}"
+          register: clean_output
+
+        - name: Make sure smartagent clean ran succesfully
+          fail:
+            msg: "failed to uninstall smartagent, the process returned {{ clean_output.rc }}"
+          when: clean_output.rc != 0
+
+        - name: Gathering service facts
+          service_facts:
+
+        - name: Make sure SmartAgent service is not running
+          ansible.builtin.fail:
+            msg: "failed to uninstall smartagent, the service is running"
+          when: "'smartagent.service' in services and (services['smartagent.service'].state == 'running')"
+
+        - name: Make sure smartagent is not running as a background process
+          community.general.pids:
+            name: smartagent
+          register: pids_of_smartagent
+
+        - name: Make sure SmartAgent process is not running
+          fail:
+            msg: "failed to uninstall smartagent, the process is running"
+          when: pids_of_smartagent.pids | length > 0
+
+        - name: Disable smartagent service if it exists
+          ansible.builtin.service:
+            name: smartagent
+            state: stopped
+            enabled: false
+          when: "'smartagent.service' in services"
+
+        - name: Delete smartagent service if it exists
+          file:
+            path: "/etc/systemd/system/smartagent.service"
+            state: absent
+          when: "'smartagent.service' in services"
+
+        - name: Reload the systemctl daemon if smartagent service exists
+          ansible.builtin.service:
+            daemon_reload: true
+          when: "'smartagent.service' in services"
+
+        - name: Delete SmartAgent directory
+          ansible.builtin.file:
+            state: absent
+            path: "{{ smart_agent_dest_folder }}"
+      when: ansible_os_family == 'RedHat' or ansible_os_family == 'Debian' or ansible_os_family == 'Suse'
+
+    - name: Uninstall AppDynamics SmartAgent on Windows
+      become: false
+      block:
+        - name: Check if smartagent service exist
+          ansible.windows.win_service_info:
+            name: appdsmartagent
+          register: service_info
+
+        - name: Stop smartagent service if exist
+          ansible.windows.win_service:
+            name: appdsmartagent
+            state: stopped
+          when: service_info.exists
+
+        - name: Clean SmartAgent Environment Variables
+          ansible.windows.win_command:
+            argv:
+              - ".\\smartagentctl"
+              - "clean"
+            chdir: "{{ smart_agent_dest_folder }}"
+          register: clean_output
+
+        - name: Make sure smartagent clean ran succesfully
+          fail:
+            msg: "failed to uninstall smartagent, the process returned {{ clean_output.rc }}"
+          when: clean_output.rc != 0
+
+        - name: Clean install location
+          ansible.windows.win_file:
+            path: '{{ smart_agent_dest_folder }}'
+            state: absent
+      when: ansible_os_family == 'Windows'
+
+    - name: agent start up result set fact
+      ansible.builtin.set_fact:
+        agent_result:
+          error: false
+          install_path: "{{ agent_dir | default('') }}"
+          agent_type: "{{ agent_type | default('node') }}"
+          action: "{{ agent_action | default('') }}"
+
+    - name: appdynamics.agent.result
+      ansible.builtin.debug:
+        msg: "{{ agent_result | to_json }}"
+
+  rescue:
+    - name: appdynamics_agent_status Uninstall of the SmartAgent failed
+      ansible.builtin.debug:
+         msg: 'SmartAgent uninstallation failed. Error: {{ ansible_failed_task.name }}'
+
+    - name: agent start up result set fact
+      ansible.builtin.set_fact:
+        agent_result:
+          error: true
+          install_path: "{{ agent_dir | default('') }}"
+          agent_type: "{{ agent_type | default('node') }}"
+          action: "{{ agent_action | default('') }}"
+
+    - name: appdynamics.agent.result
+      ansible.builtin.debug:
+        msg: "{{ agent_result | to_json }}"

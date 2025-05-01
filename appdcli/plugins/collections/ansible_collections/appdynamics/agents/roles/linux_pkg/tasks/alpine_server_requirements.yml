@@ -1,0 +1,9 @@
+---
+- name: Install tools and pre-requisites for Alpine variants
+  community.general.apk:
+    update_cache: yes
+    name:
+     - unzip
+     - tar
+     - libstdc++
+    state: installed

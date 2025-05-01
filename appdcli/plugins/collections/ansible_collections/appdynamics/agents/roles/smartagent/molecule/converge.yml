@@ -1,0 +1,7 @@
+---
+- name: Converge
+  hosts: all
+  tasks:
+    - name: "Include smartagent"
+      include_role:
+        name: "smartagent"

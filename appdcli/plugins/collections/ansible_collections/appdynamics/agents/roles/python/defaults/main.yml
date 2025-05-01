@@ -1,0 +1,53 @@
+---
+# defaults file for python agent
+# In case a new value is added please map its corresponding config val in apply-config-diff.yml
+
+install_env: default # [default - (main python path taken automatically), vitualenv - (virtualenv path need to be provided)]
+virtualenv_path: None # if environment is virtualenv then path else None
+install_agent_from: pypi # [pypi - (using pip), appd-portal - (using whl file)]
+pypi_index_url: https://pypi.org/simple
+agent_type: python
+agent_version: latest
+agent_action: install
+agent_path: "{{ linux_custom_agent_install_path | default(python_agent_dest_folder) }}"
+
+agent_config_path: "{{ agent_path }}/appd.cfg"
+run_with_root: true
+
+agent_dir_permission:
+  user: "{{ appdynamics_user }}"
+  group: "{{ appdynamics_group }}"
+
+create_appdynamics_user: true
+
+# Agent config specific details
+# Will have to keep updating it
+agent_dir: "/tmp/appd/"
+node_reuse: ""
+node_reuse_prefix: ""
+unique_host_id: ""
+
+wsgi_script: ""
+wsgi_callable: "application"
+wsgi_module: ""
+
+controller_certfile: ""
+
+log_level: "{{ agent_log_level if agent_log_level is defined else 'warning' }}"
+log_debugging: false
+log_dir: "/tmp/appd/logs"
+
+eum_disable_cookie: "off"
+eum_user_agent_allowlist: "Mozilla, Opera, WebKit, Nokia"
+
+snapshot_exit_call_details_length: "100"
+
+transaction_monitor_bt_max_duration_ms: "120000"
+
+analytics_host: "localhost"
+analytics_port: "9090"
+analytics_ssl: false
+analytics_ca_file: ""
+
+# Error flag
+error_status: false

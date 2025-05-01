@@ -1,0 +1,15 @@
+- name: Linux Block
+  become: true
+  when: check_pkg_dependencies | bool
+  block:
+    - ansible.builtin.include_tasks: rhel_server_requirements.yml
+      when: "ansible_os_family == 'RedHat'"
+
+    - ansible.builtin.include_tasks: debian_server_requirements.yml
+      when: "ansible_os_family == 'Debian'"
+
+    - ansible.builtin.include_tasks: alpine_server_requirements.yml
+      when: "ansible_os_family == 'Alpine'"
+    
+    - ansible.builtin.include_tasks: aix_server_requirements.yml
+      when: "ansible_os_family == 'AIX'"

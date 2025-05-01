@@ -1,0 +1,227 @@
+- ansible.builtin.debug:
+    msg: "'keep_backup' set to => {{ keep_backup }}. When false, agent backup files are also deleted. Default true."
+
+- become: true
+  when: ansible_os_family in ['RedHat', 'Debian', 'Suse']
+  block:
+    - name: Check if Machine Agent is already installed
+      ansible.builtin.stat:
+        path: "{{ machine_agent_dest_folder_linux }}/machineagent.jar"
+      register: previous_agent
+    - name: Set the Installation path fact
+      ansible.builtin.set_fact:
+        machine_agent_dest_folder: "{{ machine_agent_dest_folder_linux }}"
+    - name: Stop Machine Agent service
+      ansible.builtin.systemd:
+        name: appdynamics-machine-agent.service
+        state: stopped
+        enabled: no
+        daemon_reload: yes
+      register: systemd_result
+      when: autostart_agent | bool and previous_agent.stat.exists
+    - name: Clean up old Machine Agent binaries from dest folder
+      ansible.builtin.file:
+        path: "{{ machine_agent_dest_folder_linux }}"
+        state: absent
+      changed_when: false
+
+    - name: Clean up  Machine Agent binaries from backup
+      ansible.builtin.file:
+        path: "{{ machine_agent_backup_folder_linux }}"
+        state: absent
+      changed_when: false
+      when: not keep_backup
+
+    #remove the ansible installed agent type from environment variable containing list
+    - ansible.builtin.shell: "echo ${{ ansible_install_env_var }}"
+      changed_when: false
+      register: install_env_var_value
+
+    - ansible.builtin.set_fact:
+        ansible_install_agent_type: "{{ installed_agent_types | join(',') }}"
+      vars:
+        installed_agent_types: "{{ ((install_env_var_value.stdout).split(',')) | reject('equalto', 'machine') | list }}"
+
+    - ansible.builtin.lineinfile:
+        path: "/etc/environment"
+        regexp: "^{{ ansible_install_env_var }}(.*)$"
+        state: absent
+      when: ansible_install_agent_type | length == 0 # remove the variable entry
+
+    - ansible.builtin.lineinfile:
+        path: "/etc/environment"
+        line: "{{ ansible_install_env_var }}={{ ansible_install_agent_type }}"
+        regexp: "^{{ ansible_install_env_var }}(.*)$"
+        state: present
+      when: ansible_install_agent_type | length != 0 and "'machine' in (install_env_var_value.stdout).split(',')"
+
+- when: ansible_os_family == 'Windows'
+  block:
+    - name: Check if Machine Agent is already installed
+      ansible.windows.win_stat:
+        path: "{{ machine_agent_dest_folder_win }}/InstallService.vbs"
+      register: previous_agent
+    - name: Set the Installation path fact
+      ansible.builtin.set_fact:
+        machine_agent_dest_folder: "{{ machine_agent_dest_folder_win }}"
+    - name: Remove StdIn.Read in the UninstallService.vbs file which stops the playbook from returning
+      community.windows.win_lineinfile:
+        dest: '{{ machine_agent_dest_folder_win }}/UninstallService.vbs'
+        regexp: "^WScript.StdIn.Read"
+        state: absent
+      register: remove_read_std_in_result
+      changed_when: false
+      when: previous_agent.stat.exists
+
+    - name: Remove the machine agent service
+      ansible.windows.win_command: cscript.exe "{{ machine_agent_dest_folder_win }}/UninstallService.vbs"
+      register: uninstall_win_service_result
+      changed_when: false
+      when: autostart_agent | bool and previous_agent.stat.exists
+
+    - name: Clean up old Machine Agent binaries from dest folder
+      ansible.windows.win_file:
+        path: "{{ machine_agent_dest_folder_win }}"
+        state: absent
+      changed_when: false
+      when: previous_agent.stat.exists
+
+    - name: Clean up Machine Agent binaries from backup
+      ansible.windows.win_file:
+        path: "{{ machine_agent_backup_folder_windows }}"
+        state: absent
+      changed_when: false
+      when: not keep_backup
+
+    #remove the ansible installed agent type from environment variable containing list
+    - ansible.windows.win_shell: "[System.Environment]::GetEnvironmentVariable('{{ ansible_install_env_var }}')"
+      changed_when: false
+      register: install_env_var_value
+
+    - ansible.builtin.set_fact:
+        ansible_install_agent_type: "{{ installed_agent_types | join(',') }}"
+      vars:
+        installed_agent_types: "{{ ((install_env_var_value.stdout_lines[0]).split(',')) | reject('equalto', 'machine') | list }}"
+      when: install_env_var_value.stdout_lines | count > 0
+
+    - ansible.windows.win_environment:
+        state: absent
+        level: machine
+        name: "{{ ansible_install_env_var }}"
+      when: ansible_install_agent_type | default('') | length == 0
+
+    - ansible.windows.win_environment:
+        state: present
+        level: machine
+        name: "{{ ansible_install_env_var }}"
+        value: "{{ ansible_install_agent_type }}"
+      when: ansible_install_agent_type | default('') | length != 0
+
+- become: true
+  when: ansible_os_family == 'Solaris'
+  block:
+    - name: Clean up old Machine Agent binaries from dest folder
+      ansible.builtin.file:
+        path: "{{ machine_agent_dest_folder_linux }}"
+        state: absent
+      changed_when: false
+    - name: Set the Installation path fact
+      ansible.builtin.set_fact:
+        machine_agent_dest_folder: "{{ machine_agent_dest_folder_linux }}"
+    - name: Clean up  Machine Agent binaries from backup
+      ansible.builtin.file:
+        path: "{{ machine_agent_backup_folder_linux }}"
+        state: absent
+      changed_when: false
+      when: not keep_backup
+    #remove the ansible installed agent type from environment variable containing list
+    - ansible.builtin.shell: "echo ${{ ansible_install_env_var }}"
+      changed_when: false
+      register: install_env_var_value
+
+    - ansible.builtin.set_fact:
+        ansible_install_agent_type: "{{ installed_agent_types | join(',') }}"
+      vars:
+        installed_agent_types: "{{ ((install_env_var_value.stdout).split(',')) | reject('equalto', 'machine') | list }}"
+
+    - ansible.builtin.lineinfile:
+        path: "/etc/environment"
+        regexp: "^{{ ansible_install_env_var }}(.*)$"
+        state: absent
+      when: ansible_install_agent_type | length == 0 # remove the variable entry
+
+    - ansible.builtin.lineinfile:
+        path: "/etc/environment"
+        line: "{{ ansible_install_env_var }}={{ ansible_install_agent_type }}"
+        regexp: "^{{ ansible_install_env_var }}(.*)$"
+        state: present
+      when: ansible_install_agent_type | length != 0 and "'machine' in (install_env_var_value.stdout).split(',')"
+
+- become: true
+  when: ansible_os_family == 'AIX'
+  block:
+    - name: Clean up old Machine Agent binaries from dest folder
+      ansible.builtin.file:
+        path: "{{ machine_agent_dest_folder_linux }}"
+        state: absent
+      changed_when: false
+    - name: Set the Installation path fact
+      ansible.builtin.set_fact:
+        machine_agent_dest_folder: "{{ machine_agent_dest_folder_linux }}"
+    - name: Clean up  Machine Agent binaries from backup
+      ansible.builtin.file:
+        path: "{{ machine_agent_backup_folder_linux }}"
+        state: absent
+      changed_when: false
+      when: not keep_backup
+    #remove the ansible installed agent type from environment variable containing list
+    - ansible.builtin.shell: "echo ${{ ansible_install_env_var }}"
+      changed_when: false
+      register: install_env_var_value
+
+    - ansible.builtin.set_fact:
+        ansible_install_agent_type: "{{ installed_agent_types | join(',') }}"
+      vars:
+        installed_agent_types: "{{ ((install_env_var_value.stdout).split(',')) | reject('equalto', 'machine') | list }}"
+
+    - ansible.builtin.lineinfile:
+        path: "/etc/environment"
+        regexp: "^{{ ansible_install_env_var }}(.*)$"
+        state: absent
+      when: ansible_install_agent_type | length == 0 # remove the variable entry
+
+    - ansible.builtin.lineinfile:
+        path: "/etc/environment"
+        line: "{{ ansible_install_env_var }}={{ ansible_install_agent_type }}"
+        regexp: "^{{ ansible_install_env_var }}(.*)$"
+        state: present
+      when: ansible_install_agent_type | length != 0 and "'machine' in (install_env_var_value.stdout).split(',')"
+
+  rescue:
+    - name: appdynamics_agent_status Output Failed Status
+      ansible.builtin.set_fact:
+        machine_playbook_failed: true
+
+    - ansible.builtin.debug:
+        msg: "Error occured while uninstalling machine agent. Please stop the application using agent files and then retry uninstalling."
+
+- name: agent start up result set fact
+  ansible.builtin.set_fact:
+    agent_result:
+      app: "{{ application_name | default('') }}"
+      tier: "{{ tier_name | default('') }}"
+      node: "{{ node_name | default('') }}"
+      error: false
+      install_path: "{{ machine_agent_dest_folder | default('') }}"
+      agent_type: "{{ agent_type | default('machine') }}"
+      agent_version: "{{ agent_version | default('') }}"
+      action: "{{ agent_action | default('') }}"
+
+- name: appdynamics.agent.result
+  ansible.builtin.debug:
+    msg: "{{ agent_result | to_json }}"
+
+- name: appdynamics_agent_status Output Success Status
+  ansible.builtin.debug:
+    msg: "Playbook run was successful"
+  when: not machine_playbook_failed

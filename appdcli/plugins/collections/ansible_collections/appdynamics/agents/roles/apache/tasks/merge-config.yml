@@ -1,0 +1,63 @@
+- name: Merge Config block
+  block:
+    - name: Create empty agent config dictionary
+      ansible.builtin.set_fact:
+        previous_agent_config: "{{ previous_agent_config | default({}) }}"
+    
+    - name: Get Previous config data
+      when: agent_action | lower == upgrade_string
+      block:
+        - name: Check if temporary config file exists
+          ansible.builtin.stat:
+            path: "/tmp/appdynamics_agent.conf"
+          register: temporary_config
+        
+        - name: Parse previous config data
+          when: temporary_config.stat.exists
+          block:
+            - name: Read all data from previous config file
+              ansible.builtin.command: "cat /tmp/appdynamics_agent.conf"
+              register: config_data
+              changed_when: true
+            
+            - name: Generate dictionary of previous configs
+              ansible.builtin.set_fact: 
+                previous_agent_config: "{{ previous_agent_config | default({}) | combine({item.split(' ')[0].strip(): item.split(' ')[1].strip() if item.split(' ') | length() > 1 else ''}) }}"
+              with_items: "{{ config_data.stdout_lines[:] }}"
+              when:  item.strip() | length() > 0 and item.strip()[0] != '#'
+        
+        - name: Could not find previous config
+          ansible.builtin.debug:
+            msg: "Could not find previous agent config, unknown configs will be generated with default values"
+          when: not temporary_config.stat.exists
+        
+    - name: Load default values in dictionary
+      ansible.builtin.set_fact:
+        default_config_values: "{{ lookup('file', '{{ role_path }}/files/defaults.json') | from_json }}"
+
+    - name: Setting config Variables
+      ansible.builtin.set_fact:
+        application_name: "{{ application_name if application_name is defined else previous_agent_config.get('AppDynamicsApplication', appd.ansible_facts.appdynamics.app) }}"
+        tier_name: "{{ tier_name if tier_name is defined else previous_agent_config.get('AppDynamicsTier', appd.ansible_facts.appdynamics.tier) }}"
+        node_name: "{{ node_name if node_name is defined else previous_agent_config.get('AppDynamicsNode', appd.ansible_facts.appdynamics.node) }}"
+        appdynamics_enabled: "{{ appdynamics_enabled if appdynamics_enabled is defined else previous_agent_config.get('AppDynamicsEnabled', default_config_values.get('appdynamics_enabled')) }}"
+        controller_host_name: "{{ controller_host_name if controller_host_name is defined else previous_agent_config.get('AppDynamicsControllerHost', '') }}"
+        controller_port: "{{ controller_port if controller_port is defined else previous_agent_config.get('AppDynamicsControllerPort', '') }}"
+        controller_protocol: "{{ 'ON' if enable_ssl is defined and enable_ssl else previous_agent_config.get('AppDynamicsControllerSSL', 'OFF') }}"
+        account_name: "{{ account_name if account_name is defined else previous_agent_config.get('AppDynamicsAccountName', '') }}"
+        account_access_key: "{{ account_access_key if account_access_key is defined else previous_agent_config.get('AppDynamicsAccessKey', '') }}"
+        appdynamics_proxy_host: "{{ appdynamics_proxy_host if appdynamics_proxy_host is defined else previous_agent_config.get('AppDynamicsProxyHost', default_config_values.get('appdynamics_proxy_host')) }}"
+        appdynamics_proxy_port: "{{ appdynamics_proxy_port if appdynamics_proxy_port is defined else previous_agent_config.get('AppDynamicsProxyport', default_config_values.get('appdynamics_proxy_port')) }}"
+        appdynamics_launch_proxy: "{{ appdynamics_launch_proxy if appdynamics_launch_proxy is defined else previous_agent_config.get('AppDynamicsLaunchProxy', default_config_values.get('appdynamics_launch_proxy')) }}" 
+        appdynamics_backend_name_segments: "{{ appdynamics_backend_name_segments if appdynamics_backend_name_segments is defined else previous_agent_config.get('AppDynamicsBackendNameSegments', default_config_values.get('appdynamics_backend_name_segments')) }}"
+        appdynamics_resolve_backends: "{{ appdynamics_resolve_backends if appdynamics_resolve_backends is defined else previous_agent_config.get('AppDynamicsResolveBackends', default_config_values.get('appdynamics_resolve_backends')) }}"
+        appdynamics_trace_as_error: "{{ appdynamics_trace_as_error if appdynamics_trace_as_error is defined else previous_agent_config.get('AppDynamicsTraceAsError', default_config_values.get('appdynamics_trace_as_error')) }}"
+        appdynamics_report_all_instrumented_modules: "{{ appdynamics_report_all_instrumented_modules if appdynamics_report_all_instrumented_modules is defined else previous_agent_config.get('AppDynamicsReportAllInstrumentedModules', default_config_values.get('appdynamics_report_all_instrumented_modules')) }}"
+        appdynamics_request_cache_cleanup_interval: "{{ appdynamics_request_cache_cleanup_interval if appdynamics_request_cache_cleanup_interval is defined else previous_agent_config.get('AppDynamicsRequestCacheCleanupInterval', default_config_values.get('appdynamics_request_cache_cleanup_interval')) }}"
+        appdynamics_mask_cookie: "{{ appdynamics_mask_cookie if appdynamics_mask_cookie is defined else previous_agent_config.get('AppDynamicsMaskCookie', default_config_values.get('appdynamics_mask_cookie')) }}"
+        appdynamics_mask_cookie_pattern: "{{ appdynamics_mask_cookie_pattern if appdynamics_mask_cookie_pattern is defined else previous_agent_config.get('AppDynamicsCookieMatchPattern', default_config_values.get('appdynamics_mask_cookie_pattern')) }}"
+        appdynamics_mask_sm_user: "{{ appdynamics_mask_sm_user if appdynamics_mask_sm_user is defined else previous_agent_config.get('AppDynamicsMaskSmUser', default_config_values.get('appdynamics_mask_sm_user')) }}"
+        appdynamics_delimiter: "{{ appdynamics_delimiter if appdynamics_delimiter is defined else previous_agent_config.get('AppDynamicsDelimiter', default_config_values.get('appdynamics_delimiter')) }}"
+        appdynamics_segment: "{{ appdynamics_segment if appdynamics_segment is defined else previous_agent_config.get('AppDynamicsSegment', default_config_values.get('appdynamics_segment')) }}"
+        appdynamics_match_filter: "{{ appdynamics_match_filter if appdynamics_match_filter is defined else previous_agent_config.get('AppDynamicsMatchfilter', default_config_values.get('appdynamics_match_filter')) }}"
+        appdynamics_match_pattern: "{{ appdynamics_match_pattern if appdynamics_match_pattern is defined else previous_agent_config.get('AppDynamicsMatchpattern', default_config_values.get('appdynamics_match_pattern')) }}"

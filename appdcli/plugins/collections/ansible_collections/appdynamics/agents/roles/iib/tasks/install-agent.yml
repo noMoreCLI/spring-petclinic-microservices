@@ -1,0 +1,172 @@
+- name: IIB Linux x64 Block
+  become: true
+  block:
+    - name: Set the Installation path fact
+      ansible.builtin.set_fact:
+        agent_path: "{{ agent_path }}"
+        iib_agent_dest_file: "{{ iib_agent_dest_file }}"
+        install_string: "{{ install_string }}"
+        upgrade_string: "{{ upgrade_string }}"
+
+    - name: Install or upgrade
+      when: (agent_action | lower == install_string or agent_action | lower == upgrade_string)
+      block:
+        - name: Take Backup
+          ansible.builtin.include_tasks: backup.yml
+
+        - name: Ensures agent dir exists
+          ansible.builtin.file:
+            path: "{{ agent_path }}/appdynamics"
+            state: directory
+            mode: '755'
+            recurse: true
+          changed_when: false
+
+        - name: Cleanup old agent
+          ansible.builtin.include_tasks: cleanup-agent.yml
+
+        - ansible.builtin.debug:
+            msg: "Fetching Agent located at {{ agent_location }} through {{ download_protocol }} transfer"
+
+        - name: Set dest file in case of AIX 7.2
+          ansible.builtin.set_fact:
+            iib_agent_dest_file: "iib-agent.tbz2"
+          when: ansible_os_family == 'AIX' and aix_version == "7.2"
+
+        - ansible.builtin.include_role:
+            name: appdynamics.agents.fetch_agent
+          vars:
+            agent_destination_path: "{{ agent_path }}/{{ iib_agent_dest_file }}"
+            agent_source_location: "{{ agent_location }}"
+            fetch_protocol: "{{ agent_download_protocol }}"
+
+        - name: Bzip in case of AIX
+          ansible.builtin.command: "bzip2 -d {{ agent_path }}/{{ iib_agent_dest_file }}"
+          changed_when: false
+          when: ansible_os_family == 'AIX' and aix_version == "7.2"
+        
+        - name: Setting iib_agent_vars in case Bzip was done
+          ansible.builtin.set_fact:
+            iib_agent_dest_file: "iib-agent.tar"
+          when: ansible_os_family == 'AIX' and aix_version == "7.2"
+        
+        - name: Unzip the agent file in case of AIX 7.2
+          ansible.builtin.command: "tar -xvf {{ agent_path }}/{{ iib_agent_dest_file }} -C {{ agent_path }}"
+          changed_when: false
+          when: ansible_os_family == 'AIX' and aix_version == "7.2"
+
+        - name: Unzip the agent file
+          ansible.builtin.unarchive:
+            src: "{{ agent_path }}/{{ iib_agent_dest_file }}"
+            dest: "{{ agent_path }}"
+            mode: '755'
+            remote_src: true
+          changed_when: false
+          when: aix_version is not defined or aix_version != "7.2"
+
+        - name: Extract IIB Agent version
+          ansible.builtin.set_fact:
+            iib_agent_version: "{{ agent_location.split('/')[-2] }}"
+
+        - name: Create version file to store agent version
+          ansible.builtin.file:
+            path: "{{ agent_path }}/appdynamics/VERSION.txt"
+            state: touch
+
+        - name: Update Version File with IIB Version
+          ansible.builtin.lineinfile:
+            path: "{{ agent_path }}/appdynamics/VERSION.txt"
+            line: "* Agent version -- {{ iib_agent_version }}"
+
+        - name: Remove downloaded file
+          ansible.builtin.file:
+            path: "{{ agent_path }}/{{ iib_agent_dest_file }}"
+            state: absent
+          changed_when: false
+
+        - name: Applying merge config for upgrade task
+          ansible.builtin.include_tasks: merge-config.yml
+          when: (agent_action | lower == upgrade_string)
+          
+        - name: Configure Agent Config file from Template
+          ansible.builtin.template:
+            src: templates/application-agent-controller-info.xml.j2
+            dest: '{{ agent_path }}/appdynamics/controller-info.xml'
+            mode: '755'
+
+        - name: Split config_file_path to find all files that need UserExit update
+          ansible.builtin.set_fact:
+            user_exits_files: "{{ config_file_path.split(',') }}"
+          when: config_file_path is defined
+
+        - name: Update All UserExits
+          ansible.builtin.include_tasks: "update-user-exits.yml"
+          loop: "{{ user_exits_files }}"
+          loop_control:
+            loop_var: file_path
+          when: config_file_path is defined
+
+        - name: Notifying Agent State to Handler
+          ansible.builtin.debug:
+            msg: "Notifying handler for successful Agent install/upgrade"
+          changed_when: true
+          notify: "Verify iib agent state"
+
+    # get iib Agent from Rollback
+    - name: This is a Rollback, Fetch iib agent from backup
+      ansible.builtin.include_tasks: rollback.yml
+      when: (agent_action|lower == rollback_string)
+
+    - name: Uninstall agent
+      ansible.builtin.include_tasks: uninstall.yml
+      when: (agent_action | lower == uninstall_string)
+
+
+  rescue:
+    # Error occurred during installation, put back the agent present before installation
+    - name: Setting error status
+      ansible.builtin.set_fact:
+        error_status: true
+
+    - name: Notifying Agent State to Handler
+      ansible.builtin.debug:
+        msg: "Notifying handler as Exception occurred"
+      changed_when: true
+      notify: "Set Exception Logs"
+
+    - name: Printing to output file when error occurred during installation
+      ansible.builtin.debug: # print this in csv file
+        msg: 'Error occurred during installation/rollback on task - {{ ansible_failed_task.name }} '
+    
+    - name: Cleanup Task for failures
+      ansible.builtin.file:
+        path: "{{ agent_path }}"
+        state: absent
+
+    - name: Rescue called Rollback
+      ansible.builtin.include_tasks: rollback.yml
+      when: (agent_action | lower in install_action and backup_success is defined and backup_success)
+
+  always:
+    - when: (agent_action | lower != uninstall_string)
+      block:
+        - name: Recursively change ownership of the agent directory
+          ansible.builtin.file:
+            path: "{{ agent_path }}"
+            recurse: true
+            owner: "{{ agent_dir_permission.user }}"
+            group: "{{ agent_dir_permission.group }}"
+          changed_when: false
+
+        - name: Check backup directory
+          ansible.builtin.stat:
+            path: "{{ iib_agent_backup_folder }}"
+          register: backup_dir
+
+        - name: Cleanup backup
+          when: backup_dir.stat.exists
+          ansible.builtin.include_role:
+            name: common
+            tasks_from: remove_backup_based_on_max_count # run common/tasks/remove_backup_based_on_max_count.yaml
+          vars:
+            agent_backup_folder: "{{ iib_agent_backup_folder }}"

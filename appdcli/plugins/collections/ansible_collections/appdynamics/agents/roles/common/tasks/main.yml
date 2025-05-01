@@ -1,0 +1,66 @@
+- ansible.builtin.include_tasks: validate_parameters.yml
+- ansible.builtin.include_tasks: verify_lxml.yml
+  run_once: true
+  when: logger_role_standalone is defined and logger_role_standalone
+ 
+- when: init_and_validate_agent_variables and (agent_action|lower != rollback_string)
+  block:
+  - ansible.builtin.debug:
+       msg:  "Role Agent variables: type=> {{ agent_type }} version=> {{ agent_version }}"
+
+  - ansible.builtin.include_tasks: verify_jq.yml
+    run_once: true
+
+  - ansible.builtin.include_tasks: get_agent.yml
+    when: not is_general_custom_install | bool and not is_agent_specific_custom_install | bool
+
+  - name: Set AppDynamics access key facts
+    ansible.builtin.set_fact:
+      account_access_key: "{{ controller_account_access_key }}"
+    no_log: yes
+
+  - name: Set Controller proxy configuration
+    ansible.builtin.set_fact:
+      enable_proxy: "{{ enable_proxy | bool | lower }}"
+
+  - name: Set AppDynamics controller facts
+    ansible.builtin.set_fact:
+      account_name: "{{ controller_account_name }}"
+      global_analytics_account_name: "{{ controller_global_analytics_account_name }}"
+      controller_host_name: "{{ controller_host_name }}"
+      analytics_event_endpoint: "{{ analytics_event_endpoint }}"
+      enable_ssl: "{{ enable_ssl | bool | lower }}"
+      controller_port: "{{ controller_port }}"
+      enable_analytics_agent: "{{ enable_analytics_agent | bool | lower }}"
+      machine_hierarchy: "{{ machine_hierarchy }}"
+
+  - name: Set HTTPS Protocol facts
+    ansible.builtin.set_fact:
+      controller_protocol: "{% if enable_ssl | bool %}https{% else %}http{% endif %}"
+
+  - name: Print params
+    vars:
+       params: "
+        SSL enabled = {{ enable_ssl }} |
+        Controller= {{ controller_protocol }}://{{ controller_host_name }}:{{ controller_port }} |
+        controller_account_name = {{ controller_account_name }} |
+        analytics_event_endpoint = {{ analytics_event_endpoint }} |
+        enable_analytics_agent = {{ enable_analytics_agent }}  |
+        enable_proxy = {{ enable_proxy }} |
+        agent_log_level = {{ agent_log_level }}|
+        agent_logger = {{ agent_loggers }}"
+    ansible.builtin.debug:
+      msg: "{{ params.split('|') }}"
+
+- ansible.builtin.include_tasks: adduser-linux.yml
+  when: >
+    ( ansible_os_family == 'RedHat' or ansible_os_family == 'Debian' or ansible_os_family == 'Alpine' or ansible_os_family == 'AIX') 
+    and create_appdynamics_user | bool
+
+- name: install appdynamics smart agent
+  ansible.builtin.include_tasks: install_sa.yml
+  when: install_smart_agent | bool
+
+- name: Add appdynamics installation type environment variable
+  ansible.builtin.include_tasks: add_installation_env_var.yml
+  when: add_ansible_install_env_var | bool and (agent_action|lower != rollback_string)

@@ -1,0 +1,20 @@
+---
+- name: Check IIS is present
+  ansible.builtin.include_tasks: check_iis.yml
+  when: restart_app | bool
+
+- name: Set Default .Net Agent MSI Version for Result
+  ansible.builtin.set_fact:
+    dotnet_msi_agent_version: null
+
+- name: Uninstall .Net Agent MSI
+  ansible.builtin.include_tasks: uninstall_dotnet_agent.yml
+  when: agent_action | lower == uninstall_string
+
+- name: Rollback .Net Agent MSI to previous installation
+  ansible.builtin.include_tasks: rollback_dotnet_agent.yml
+  when: agent_action | lower == rollback_string
+
+- name: Install .NET Agent MSI
+  ansible.builtin.include_tasks: reinstall_dotnet_agent.yml
+  when: agent_action is not defined or agent_action | lower in (install_string, upgrade_string)

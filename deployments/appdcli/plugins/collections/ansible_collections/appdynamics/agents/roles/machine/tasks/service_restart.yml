@@ -1,0 +1,42 @@
+---
+- block: #restart the Machine Agent service
+    - name: Stop Machine Agent service
+      ansible.builtin.systemd:
+        name: appdynamics-machine-agent
+        state: stopped
+        daemon_reload: yes
+      changed_when: false
+      when: autostart_agent | bool and previous_agent.stat.exists
+
+    - name: Reload systemd configs
+      ansible.builtin.systemd:
+        daemon_reload: yes
+      when: autostart_agent | bool and previous_agent.stat.exists
+
+    - name: Start the agent service
+      ansible.builtin.systemd:
+        name: appdynamics-machine-agent
+        state: restarted
+        daemon_reload: yes
+      changed_when: false
+      when: autostart_agent | bool and previous_agent.stat.exists
+
+    - name: Make sure the service is running
+      ansible.builtin.command: systemctl status appdynamics-machine-agent
+      register: serviceresult
+      ignore_errors: yes
+      changed_when: false
+      when: autostart_agent | bool and previous_agent.stat.exists
+
+    - name: Show Machine Agent status
+      ansible.builtin.debug:
+        var: serviceresult
+      when: autostart_agent | bool
+  rescue:
+    - name: appdynamics_agent_status Output Failed Status
+      ansible.builtin.set_fact:
+        playbook_failed: true
+
+    - name: Error occured while doing restart of machine agent service
+      ansible.builtin.fail:
+        msg: 'Error occured while doing service restart, task failed at - {{ ansible_failed_task.name }}'

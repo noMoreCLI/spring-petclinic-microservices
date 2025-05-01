@@ -1,0 +1,79 @@
+- ansible.builtin.debug:
+    msg: "Fetching Machine Agent located at {{ agent_location }} through {{ download_protocol }} transfer"
+
+- ansible.builtin.include_role:
+    name: appdynamics.agents.fetch_agent
+  vars:
+    agent_destination_path: '{{ machine_agent_dest_folder_linux }}/{{ ma_agent_dest_file }}'
+    agent_source_location: '{{ agent_location }}'
+    fetch_protocol: '{{ agent_download_protocol }}'
+- name: Unzip the Machine agent file
+  ansible.builtin.unarchive:
+    src:  "{{ machine_agent_dest_folder_linux }}/{{ ma_agent_dest_file }}"
+    dest: "{{ machine_agent_dest_folder_linux }}"
+    mode: 0755
+    remote_src: yes
+  changed_when: false
+
+- when: (machine_agent_backup_config_folder is defined and machine_agent_backup_config_folder | length > 0)
+  block:
+    - ansible.builtin.stat:
+        path: "{{ machine_agent_backup_config_folder }}/conf"
+      register: backup_conf_folder
+
+    - ansible.builtin.stat:
+        path: "{{ machine_agent_backup_config_folder }}/monitors"
+      register: backup_monitors_folder
+
+
+    - name: Retrieve Machine agent config of previous agent
+      ansible.builtin.copy:
+        src: '{{ item.src }}'
+        dest: '{{ item.dest }}'
+        mode: 0755
+        remote_src: true
+      changed_when: false
+      with_items:
+        - { filename: "{{ backup_conf_folder }}", src: "{{ machine_agent_backup_config_folder }}/conf",
+            dest: "{{ machine_agent_dest_folder_linux }}/" }
+        - { filename: "{{ backup_monitors_folder }}", src: "{{ machine_agent_backup_config_folder }}/monitors",
+            dest: "{{ machine_agent_dest_folder_linux }}/" }
+      when: (item.filename).stat.exists
+      loop_control:
+        label: "{{ item.src }}"
+
+    - name: Merging controller-info.xml with args.yaml
+      ansible.builtin.include_tasks: merging-controller-info.yml
+
+- name: Machine Agent config generation in case of Fresh install
+  when: not previous_agent.stat.exists
+  block:
+    - name: Configure Machine Agent controller-info.xml file
+      ansible.builtin.template:
+        src: templates/machine-agent-controller-info.xml.j2
+        dest: '{{ machine_agent_dest_folder_linux }}/conf/controller-info.xml'
+        mode: 0755
+      changed_when: false
+
+# Update the Log4j setting to apply the desired log level to all the loggers
+# listed in the {{agent_loggers}} list.
+- name: Set the log level on the agent (if != info, which it is by default)
+  ansible.builtin.include_role:
+    name: logger
+  vars:
+    logger_role_standalone: false # no need to check if the dir exists
+  when: agent_log_level|lower != 'info'
+
+- name: Ensure machine agent file is executable
+  ansible.builtin.file:
+    path: "{{ machine_agent_dest_folder_linux }}/bin/machine-agent"
+    mode: 0755
+
+- ansible.builtin.include_tasks: configure_log_analytics.yml
+  when: enable_analytics_agent | bool
+
+- name: Clean up - remove {{ ma_agent_dest_file }}
+  ansible.builtin.file:
+    path: "{{ machine_agent_dest_folder_linux }}/{{ ma_agent_dest_file }}"
+    state: absent
+  changed_when: false

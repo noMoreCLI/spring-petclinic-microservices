@@ -1,0 +1,8 @@
+- name: Verify IIB agent state
+  ansible.builtin.include_tasks: handlers/verify-agent-state.yml
+  listen: "Verify iib agent state"
+
+- name: appdynamics_agent_status Output Failed Status
+  ansible.builtin.set_fact:
+    playbook_failed: true
+  listen: "Set Exception Logs"

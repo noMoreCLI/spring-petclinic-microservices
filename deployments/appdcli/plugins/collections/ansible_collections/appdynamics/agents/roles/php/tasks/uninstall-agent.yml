@@ -1,0 +1,69 @@
+- name: Uninstall PHP Agent
+  become: true
+  block:
+    - name: Pre-check for php before agent installation
+      ansible.builtin.include_tasks: pre-check.yml
+
+    - name: Check if php-agent is installed
+      ansible.builtin.shell: "{{ php_path }} -m | grep appdynamics_agent"
+      register: old_agent_found
+      changed_when: false
+      ignore_errors: True
+      failed_when: old_agent_found.rc > 1
+    
+    - name: Check if agent directory exists
+      ansible.builtin.stat:
+        path: "{{ agent_path }}"
+      register: agent_dir_check
+
+    # uninstalling the agent 
+    - name: Uninstallation Tasks
+      when: agent_dir_check.stat.exists and old_agent_found.rc == 0
+      block:
+        - name: Uninstalling agent from php modules
+          ansible.builtin.command: 
+            chdir: "{{ agent_path }}"
+            cmd: "./install.sh -u"
+          changed_when: false
+        
+        - name: Remove appdynamics installation type environment variable
+          ansible.builtin.include_role:
+            name: common
+            tasks_from: remove_installation_env_var
+    
+        - name: Clean up current agent directory
+          ansible.builtin.file:
+            path: "{{ agent_path }}"
+            state: absent
+          register: agent_deleted
+          changed_when: false
+        
+        - name: Deleting php agent backup
+          ansible.builtin.file:
+            path: "{{ php_agent_backup_folder_linux }}/"
+            state: absent
+          changed_when: false
+          when: not keep_backup
+    
+    # Calling handler for uninstallation checks
+    - name: Notifying to handler for uninstall checks
+      ansible.builtin.debug:
+        msg: "Notifying handler for successfull uninstall checks"
+      changed_when: true
+      notify: "Verify php agent uninstall"
+  
+  rescue:
+    # Calling handler for task failures
+    - name: Setting error status
+      ansible.builtin.set_fact:
+        error_status: true
+
+    - name: Notifying to handler for failure
+      ansible.builtin.debug:
+        msg: "Notifying handler for task failure"
+      changed_when: true
+      notify: "Logging for failures"
+
+    - name: Printing to output file as error occured while doing Agent uninstall
+      ansible.builtin.debug:
+         msg: 'Error occured while doing Agent uninstall task failed - {{ ansible_failed_task.name }}'

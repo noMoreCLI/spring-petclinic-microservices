@@ -1,0 +1,13 @@
+---
+# This playbook deploys a simple standalone Tomcat 7 server and a sample .war file.
+
+- name: Deploy tomcat
+  hosts: all
+  roles:
+    - role: appdynamics.agents.selinux
+    - role: appdynamics.agents.tomcat
+      vars:
+        http_port: 8080
+        https_port: 8443
+        admin_username: admin
+        admin_password: adminsecret

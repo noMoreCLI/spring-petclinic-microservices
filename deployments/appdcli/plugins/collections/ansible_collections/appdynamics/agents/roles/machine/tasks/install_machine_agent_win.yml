@@ -1,0 +1,345 @@
+---
+- name: Machine Agent windows Block
+  block:
+    - ansible.builtin.set_fact:
+        backup_done_if_needed: false
+
+    - name: Set the Installation path fact
+      ansible.builtin.set_fact:
+        machine_agent_dest_folder_win: "{{ machine_agent_install_path_windows }}"
+        ma_agent_dest_file: "{{ ma_agent_dest_file }}"
+
+    - ansible.builtin.debug:
+        msg:
+          - "Install directory path set to {{ machine_agent_dest_folder_win }}"
+          - "Backup directory path set to {{ machine_agent_backup_folder_windows }}"
+
+    - name: Ensure agent backup dir exists
+      ansible.windows.win_file:
+        path: "{{ machine_agent_backup_folder_windows }}/"
+        state: directory
+      changed_when: false
+
+    - name: If doing a rollback, check that backup exists
+      ansible.builtin.include_tasks: rollback_check_backup_exists.yml #run machine/tasks/rollback_check_backup_exists.yam
+      when: (agent_action|lower == rollback_string)
+
+    - name: Check if Machine Agent is already installed
+      ansible.windows.win_stat:
+        path: "{{ machine_agent_dest_folder_win }}/InstallService.vbs"
+      register: previous_agent
+    - ansible.builtin.debug:
+        msg:
+          - "Machine agent already exists in install path - {{ previous_agent.stat.exists }}."
+          - "Take agent backup before upgrading. Maximum no. of allowed backups set to {{ max_agent_backup_count }}."
+    - ansible.builtin.debug:
+        msg: "WARNING -Max backup count set to 0. No backup will be created for restoring agent in future."
+      when: max_agent_backup_count == 0
+
+    - name: Backup task, if previous agent exists and not a rollback
+      when: (agent_action|lower != rollback_string) and (agent_action|lower != uninstall_string) and previous_agent.stat.exists
+      block:
+        - name: Remove StdIn.Read in the UninstallService.vbs file which stops the playbook from returning
+          community.windows.win_lineinfile:
+            dest: '{{ machine_agent_dest_folder_win }}/UninstallService.vbs'
+            regexp: "^WScript.StdIn.Read"
+            state: absent
+          register: remove_read_std_in_result
+          when: previous_agent.stat.exists
+          changed_when: false
+
+        - name: Remove the machine agent service
+          ansible.windows.win_command: cscript.exe "{{ machine_agent_dest_folder_win }}/UninstallService.vbs"
+          register: install_win_service_result
+          when:  autostart_agent | bool and previous_agent.stat.exists
+          changed_when: false
+
+        - name: Set agent backup file name
+          ansible.builtin.set_fact:
+            machine_agent_backup_file_path: "{{ machine_agent_backup_folder_windows }}/machine-agent.{{ ansible_date_time.iso8601_basic_short }}.zip"
+
+        - ansible.builtin.set_fact: #save config in backup folder for using them later during install
+            machine_agent_backup_config_folder: "{{ machine_agent_backup_folder_windows }}/config_{{ ansible_date_time.iso8601_basic_short }}"
+
+        - ansible.windows.win_stat:
+            path: "{{ machine_agent_dest_folder_win }}/conf"
+          register: old_conf_folder
+
+        - ansible.windows.win_stat:
+            path: "{{ machine_agent_dest_folder_win }}/monitors"
+          register: old_monitors_folder
+
+
+        - name: Save existing agent configs to retain them in newly installed agent
+          ansible.windows.win_copy:
+            src: "{{ item.src }}"
+            dest: "{{ item.dest }}"
+            remote_src: true
+          changed_when: false
+          with_items:
+            - { filename: "{{ old_conf_folder }}", src: "{{ machine_agent_dest_folder_win }}/conf",
+                dest: "{{ machine_agent_backup_config_folder }}/" }
+            - { filename: "{{ old_monitors_folder }}", src: "{{ machine_agent_dest_folder_win }}/monitors",
+                dest: "{{ machine_agent_backup_config_folder }}/" }
+
+          when: (item.filename).stat.exists and (agent_action|lower != rollback_string)  #don't retain conf folder during rollback
+          loop_control:
+            label: "{{ item.src }}"
+
+        - name: Backup old Machine Agent to folder {{ machine_agent_backup_folder_windows }}
+          community.windows.win_zip:
+            src: "{{ machine_agent_dest_folder_win }}\\*"
+            dest: "{{ machine_agent_backup_file_path }}"
+          when: previous_agent.stat.exists
+          changed_when: false
+
+    - name: Set backup config folder, when undefined but exists in backup directory
+      when: machine_agent_backup_config_folder is not defined or machine_agent_backup_config_folder | length == 0
+      block:
+        - ansible.windows.win_find:
+            paths: "{{ machine_agent_backup_folder_windows }}/"
+            patterns: 'conf*'
+            file_type: directory
+          register: backup_conf_folder
+
+        - ansible.builtin.set_fact:
+            machine_agent_backup_config_folder: "{{ backup_conf_folder.files[0].path }}"
+          when: backup_conf_folder.files | count != 0
+
+        - ansible.builtin.set_fact:
+            machine_agent_backup_config_folder: ""
+          when: backup_conf_folder.files | count == 0 #cleanup if fact was already set in previous role in same play
+
+    - ansible.builtin.set_fact:
+        backup_done_if_needed: true
+
+    - name: Ensures application agent dir exists
+      ansible.windows.win_file:
+        path: "{{ machine_agent_dest_folder_win }}/"
+        state: directory
+      changed_when: false # this ensures this task is idempotent
+
+    - name: This is an upgrade/install task
+      ansible.builtin.include_tasks: machine_agent_windows_upgrade.yml
+      when: (agent_action|lower != rollback_string) and (agent_action|lower != uninstall_string)
+
+    #ROLLBACK, get the agent from backup
+    - name: This is Rollback
+      when: (agent_action|lower == rollback_string)
+      block:
+        - name: Ensures machine agent dir exists- {{ machine_agent_dest_folder_win }}
+          ansible.windows.win_file:
+            path: "{{ machine_agent_dest_folder_win }}/"
+            state: directory
+          changed_when: false
+
+        - name: Remove StdIn.Read in the UninstallService.vbs file which stops the playbook from returning
+          community.windows.win_lineinfile:
+            dest: '{{ machine_agent_dest_folder_win }}/UninstallService.vbs'
+            regexp: "^WScript.StdIn.Read"
+            state: absent
+          register: remove_read_std_in_result
+          changed_when: false
+          when: previous_agent.stat.exists
+
+        - name: Remove the machine agent service
+          ansible.windows.win_command: cscript.exe "{{ machine_agent_dest_folder_win }}/UninstallService.vbs"
+          register: uninstall_win_service_result
+          changed_when: false
+          when: autostart_agent | bool and previous_agent.stat.exists
+
+        - name: Fetch machine agent from backup
+          ansible.builtin.include_tasks: machine_agent_from_backup_windows.yml #run machine/tasks/machine_agent_from_backup_linux.yaml
+          vars:
+            agent_backup_folder_linux: "{{ machine_agent_backup_folder_windows }}"
+            agent_dest_folder_linux: "{{ machine_agent_dest_folder_win }}"
+
+        - name: Install machine agent service
+          ansible.windows.win_command: "cscript.exe {{ machine_agent_dest_folder_win }}/InstallService.vbs {{ java_system_properties }}"
+          register: install_win_service_result
+          changed_when: false
+          when: autostart_agent | bool
+        - name: Install service result
+          ansible.builtin.debug:
+            var: install_win_service_result
+          when: autostart_agent | bool
+
+  rescue:
+    - name: appdynamics_agent_status Output Failed Status
+      ansible.builtin.set_fact:
+        machine_playbook_failed: true
+
+    - name: Error occurred while updating controller-info.xml, Deleting temporary folder from control node
+      when: machine_merge_finished is defined and machine_merge_finished is false
+      block:
+        - name: Delete controller files
+          ansible.builtin.file:
+            state: absent
+            path: machine-temp/controller-info-{{ inventory_hostname }}
+          delegate_to: localhost
+          vars:
+            ansible_become: false
+
+        # Check if any controller-info files are present
+        - name: Check if localhost has controller-info.xml files
+          ansible.builtin.find:
+            paths: machine-temp
+          delegate_to: localhost
+          register: filesFound
+          vars:
+            ansible_become: false
+
+        # If folder is empty, delete the folder
+        - name: Check if folder is empty
+          ansible.builtin.file:
+            state: absent
+            path: machine-temp
+          delegate_to: localhost
+          vars:
+            ansible_become: false
+          when: filesFound.matched == 0
+
+        - name: Print failure message occured during upgrading controller-info.xml
+          ansible.builtin.debug:
+            msg: "Error occured while merging controller-info.xml with the args.yaml"
+
+    - name: Error occured while creating backup, Abort after cleanup(if any)
+      when: backup_done_if_needed is not defined or backup_done_if_needed is false
+      block:
+        - name: Cleanup if any partial backup file was created as error occured
+          ansible.windows.win_file:
+            path: "{{ machine_agent_backup_file_path }}"
+            state: absent
+          changed_when: false
+          when: previous_agent is defined and previous_agent.stat.exists and machine_agent_backup_file_path is defined
+        - name: Cleanup if config backup file was created
+          ansible.windows.win_file:
+            path: "{{ machine_agent_backup_config_folder }}"
+            state: absent
+          changed_when: false
+          when: previous_agent is defined and previous_agent.stat.exists and machine_agent_backup_config_folder is defined
+        - name: Print failure message since error occured before taking agent backup
+          ansible.builtin.debug:
+            msg: 'Error occured while creating the backup on task - {{ ansible_failed_task.name }}. Agent will not be installed.'
+
+
+    #Error occured during installation, put back the agent present before installation
+    - name: Error occured during installation/rollback
+      when: backup_done_if_needed is true
+      block:
+        - name: Print failure message since error occured during installation
+          ansible.builtin.debug:
+            msg: 'Error occured during installation/rollback on task - {{ ansible_failed_task.name }}. Trying to restore agent from backup.'
+        - name: Remove StdIn.Read in the UninstallService.vbs file which stops the playbook from returning
+          community.windows.win_lineinfile:
+            dest: '{{ machine_agent_dest_folder_win }}/UninstallService.vbs'
+            regexp: "^WScript.StdIn.Read"
+            state: absent
+          register: remove_read_std_in_result
+          when: previous_agent.stat.exists
+          changed_when: false
+
+        - name: Remove the machine agent service
+          ansible.windows.win_command: cscript.exe "{{ machine_agent_dest_folder_win }}/UninstallService.vbs"
+          register: uninstall_win_service_result
+          changed_when: false
+          when: autostart_agent | bool and previous_agent.stat.exists
+
+        - name: Clean up agent files present (if any) due to failure during installation
+          ansible.windows.win_file:
+            path: "{{ machine_agent_dest_folder_win }}"
+            state: absent
+          changed_when: false
+
+        - name: Ensures machine agent dir exists {{ machine_agent_dest_folder_win }}
+          ansible.windows.win_file:
+            path: "{{ machine_agent_dest_folder_win }}"
+            state: directory
+
+        - name: Restore Machine agent from backup when agent_action is not rollback
+          ansible.builtin.include_tasks: machine_agent_from_backup_windows.yml #run machine/tasks/machine_agent_from_backup_windows.yaml
+          vars:
+            agent_backup_folder_linux: "{{ machine_agent_backup_folder_windows }}"
+            agent_dest_folder_linux: "{{ machine_agent_dest_folder_win }}"
+          when: (agent_action|lower != rollback_string)
+
+        - name: Install machine agent service
+          ansible.windows.win_command: "cscript.exe {{ machine_agent_dest_folder_win }}/InstallService.vbs {{ java_system_properties }}"
+          register: install_win_service_result
+          changed_when: false
+          when: autostart_agent | bool and previous_agent.stat.exists and (agent_action|lower != rollback_string)
+
+        - name: Install service result
+          ansible.builtin.debug:
+            var: install_win_service_result
+
+  always:
+    #cleanup agent config from backup, only if agent is installed, because it should have already been restored by now OR Max_backup_count is 0
+    - name: Cleanup - find the agent config in backup dir
+      ansible.windows.win_find:
+        paths: "{{ machine_agent_backup_folder_windows }}"
+        patterns: 'config*'
+        file_type: directory
+      register: retained_configs
+
+    - name: Delete retained config file in backup dir
+      ansible.windows.win_file:
+        state: absent
+        path: "{{ item.path }}"
+      changed_when: false
+      with_items: "{{ retained_configs.files }}"
+      when: retained_configs.files | count > 0 and (previous_agent.stat.exists or max_agent_backup_count == 0)
+      loop_control:
+        label: "{{ item.path }}"
+
+    #cleanup agent zips from backup if needed
+    - name: Cleanup - find the agents in backup dir
+      ansible.windows.win_find:
+        paths: "{{ machine_agent_backup_folder_windows }}"
+        patterns: "machine*"
+        file_type: file
+      register: backup_files
+
+    - ansible.builtin.debug:
+        msg: "Backed-up machine agent files present currently : {{ backup_files.files }}"
+        verbosity: 1
+    - name: Cleanup agent backup files
+      when: (backup_files.files | count > max_agent_backup_count)
+      block:
+        - ansible.builtin.set_fact:
+            old_backup_files: "{{ (backup_files.files | sort(attribute='path'))[:-max_agent_backup_count] }}"
+          when: max_agent_backup_count > 0
+
+        - ansible.builtin.set_fact:
+            old_backup_files: "{{ backup_files.files | sort(attribute='path') }}"
+          when: max_agent_backup_count == 0
+
+        - name: Delete the old backup files if more than {{ max_agent_backup_count }}
+          ansible.windows.win_file:
+            state: absent
+            path: "{{ item.path }}"
+          changed_when: false
+          with_items: "{{ old_backup_files }}"
+          loop_control:
+            label: "{{ item.path }}"
+
+    - name: agent start up result set fact
+      ansible.builtin.set_fact:
+        agent_result:
+          app: "{{ application_name | default('') }}"
+          tier: "{{ tier_name | default('') }}"
+          node: "{{ node_name | default('') }}"
+          error: false
+          install_path: "{{ machine_agent_dest_folder_win | default('') }}"
+          agent_type: "{{ agent_type | default('machine') }}"
+          agent_version: "{{ agent_version | default('') }}"
+          action: "{{ agent_action | default('') }}"
+
+    - name: appdynamics.agent.result
+      ansible.builtin.debug:
+        msg: "{{ agent_result | to_json }}"
+
+    - name: appdynamics_agent_status Output Success Status
+      ansible.builtin.debug:
+        msg: "Playbook run was successful"
+      when: not machine_playbook_failed

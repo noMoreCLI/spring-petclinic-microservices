@@ -1,0 +1,112 @@
+---
+- name: Install Appdynamics SmartAgent on Windows
+  become: false
+  block:
+
+    # [ - - - - - - - -  download windows installer - - - - - - -
+    - name: Set windows installer path
+      set_fact:
+        windows_installer_dest_path: "{{ ansible_env.TEMP }}\\appdsmartagent_64_windows_{{ agent_ver }}.zip"
+        windows_download_path_control_node: "/tmp/appdsmartagent_64_windows_{{ agent_ver }}.zip"
+
+    - name: Copy local smartagent install file to Windows target if it does not exist
+      win_copy:
+        src: "{{ windows_download_path_control_node }}"
+        dest: "{{ windows_installer_dest_path }}"
+        remote_src: no
+
+    #   - - - - - - -- - - - - - - -- - - - - - - -- - - - - - - - - - - ]
+
+    # [ - - - - - - - -  remove existing smartagent service - - - - - - -
+    - name: Check if smartagent service exist
+      ansible.windows.win_service_info:
+        name: appdsmartagent
+      register: service_info
+
+    - name: Stop smartagent service if exist
+      ansible.windows.win_service:
+        name: appdsmartagent
+        state: stopped
+      when: service_info.exists
+
+    - name: Remove service if smartagent service exist
+      ansible.windows.win_service:
+        name: appdsmartagent
+        state: absent
+      when: service_info.exists
+    #   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ]
+
+    # [ - - - - - -  clean unzip dir / install location;  then unzip - - - - - -
+    - name: Clean install location
+      ansible.windows.win_shell: |
+        get-childitem -path '{{ smart_agent_dest_folder }}\*.*'| remove-item -force -recurse -erroraction silentlycontinue
+        $LastExitCode = 0
+
+    - name: Unzip smartagent install file
+      community.windows.win_unzip:
+        src: "{{ windows_installer_dest_path }}"
+        dest: "{{ smart_agent_dest_folder }}"
+        delete_archive: yes
+    #   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ]
+
+    # [ - - - - - - - - - - - -  setup config.ini - - - - - - - - - - - - - -
+    - name: Create the appd-config file with default parameters.
+      ansible.builtin.include_tasks: create-config.yml
+    #   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ]
+
+    # [ - - - - - - - - - - - -  install smartagent service - - - - - - - - - -
+    - name: Validate smartagent successful unzip
+      ansible.windows.win_stat:
+        path: "{{ smart_agent_dest_folder }}\\smartagent.exe"
+      register: smartagent_binary
+
+    - name: Create and start smartagent service using smartagentctl
+      ansible.windows.win_command:
+        argv:
+          - ".\\smartagentctl.exe"
+          - "start"
+          - "--service"
+        chdir: "{{ smart_agent_dest_folder }}"
+      when: smartagent_binary.stat.exists and smartagent_auto_start
+
+    - name: Get info for a smartagent service
+      ansible.windows.win_service_info:
+        name: appdsmartagent
+      register: service_info
+
+    - name: Fail if smartagent service was not installed
+      ansible.builtin.fail:
+        msg: "Smartagent service was not installed properly"
+      when: not ( service_info.exists )
+    #   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ]
+
+    # [ - - - - - - - - - - - -  Output install result - - - - - - - - - - - -
+    - name: agent start up result set fact
+      ansible.builtin.set_fact:
+        agent_result:
+          error: false
+          install_path: "{{ agent_dir | default('') }}"
+          agent_type: "{{ agent_type | default('node') }}"
+          action: "{{ agent_action | default('') }}"
+
+    - name: appdynamics.agent.result
+      ansible.builtin.debug:
+        msg: "{{ agent_result | to_json }}"
+
+  rescue:
+    - name: appdynamics_agent_status Install of the SmartAgent failed
+      ansible.builtin.debug:
+        msg: 'SmartAgent installation failed. Error: {{ ansible_failed_task.name }}'
+
+    - name: agent start up result set fact
+      ansible.builtin.set_fact:
+        agent_result:
+          error: true
+          install_path: "{{ agent_dir | default('') }}"
+          agent_type: "{{ agent_type | default('node') }}"
+          action: "{{ agent_action | default('') }}"
+
+    - name: appdynamics.agent.result
+      ansible.builtin.debug:
+        msg: "{{ agent_result | to_json }}"
+    #   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ]

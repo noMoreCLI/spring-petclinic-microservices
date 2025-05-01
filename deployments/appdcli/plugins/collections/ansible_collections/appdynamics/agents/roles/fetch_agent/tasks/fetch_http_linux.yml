@@ -1,0 +1,16 @@
+---
+# Tasks to download agent via http into the desired directory
+- name: Download Agent via http
+  ansible.builtin.get_url:
+    url: "{{ agent_source_location }}"
+    dest: "{{ agent_destination_path }}"
+    force: true # download a new file even if agent zip file exists.
+    url_username: "{{ lookup('env', 'CUSTOM_HTTP_USERNAME') if lookup('env', 'ENABLE_CUSTOM_HTTP') is defined and lookup('env', 'CUSTOM_HTTP_USERNAME') else omit }}"
+    url_password: "{{ lookup('env', 'CUSTOM_HTTP_PASSWORD') if lookup('env', 'ENABLE_CUSTOM_HTTP') is defined and lookup('env', 'CUSTOM_HTTP_PASSWORD') else omit }}"
+  changed_when: false
+  register: result
+  failed_when: result.status_code != 200
+
+- name: Print download results
+  ansible.builtin.debug:
+    msg: "{{ result }}"

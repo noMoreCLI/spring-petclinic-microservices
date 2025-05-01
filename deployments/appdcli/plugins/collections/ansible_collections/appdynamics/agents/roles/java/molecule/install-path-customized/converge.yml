@@ -1,0 +1,36 @@
+---
+- name: Converge
+  hosts: all
+  gather_facts: true
+  vars:
+    linux_install_root: "/opt/appdynamics/linux_root"
+    linux_custom_agent_install_path: "/opt/appdynamics/agent_install_path"
+    agent_type: sun-java
+    agent_action: upgrade
+    # The applicationName
+    application_name: "IoT_API"
+    tier_name: "java_tier" # ONLY required if agent type is not machine and db agent
+    agent_log_level: "info"
+    # Your controller details
+    controller_account_access_key: "2498dd59-d059-48c1-8ec2-8dc2f3efa112" # Please add this to your Vault
+    controller_host_name: "lncontroller20103-2010-o8evv8rp.appd-cx.com" # Your AppDynamics controller
+    controller_account_name: "customer1" # Please add this to your Vault
+    enable_ssl: false
+    controller_port: "8090"
+
+  pre_tasks:
+    - include_tasks:
+        file: ../common/pre-task.yml
+
+    - include_role:
+        name: appdynamics.agents.java
+      vars:
+        agent_version: 22.6.0
+        agent_action: install
+
+    - debug:
+        msg: "**********Upgrading the agent now*****************"
+
+  roles:
+    - { role: appdynamics.agents.java,
+        agent_version: 22.7.0 }

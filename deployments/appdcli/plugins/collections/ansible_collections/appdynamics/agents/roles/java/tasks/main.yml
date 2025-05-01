@@ -1,0 +1,12 @@
+- ansible.builtin.include_tasks: validate_supported_os.yml
+
+- ansible.builtin.include_tasks: uninstall-java-agent.yml
+  when: (agent_action|lower == uninstall_string)
+
+- ansible.builtin.include_tasks: java-agent-linux.yml
+  when: >
+    (ansible_os_family == 'RedHat' or ansible_os_family == 'Debian' or ansible_os_family == 'Alpine'  or ansible_os_family == 'Suse' ) and agent_action|lower != uninstall_string
+
+- ansible.builtin.include_tasks: java-agent-windows.yml
+  when: >
+    ansible_os_family == 'Windows' and agent_action|lower != uninstall_string

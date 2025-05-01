@@ -1,0 +1,58 @@
+- name: Agent backup block
+  become: true
+  block:
+    - name: Check if agent exists
+      ansible.builtin.stat:
+        path: "{{ agent_path }}/appdynamics/"
+      register: previous_agent
+
+    - when: previous_agent.stat.exists
+      block:
+        - name: Create agent backup folder
+          ansible.builtin.file:
+            path: "{{ iib_agent_backup_folder }}"
+            state: directory
+            mode: '755'
+          become: true
+
+        - name: Archive Agent Destination # Complete Agent Directory for Backup Zip
+          community.general.archive:
+            path: "{{ agent_path }}/appdynamics/*"
+            dest: "{{ iib_agent_backup_folder }}/agent.{{ ansible_date_time.iso8601 }}.zip"
+            mode: '755'
+            exclude_path: "{{ agent_path }}/appdynamics/logs"
+          changed_when: false
+
+        
+        - name: Task to extract previous agent config details
+          when: (agent_action | lower == upgrade_string)
+          block:
+              # Fetching controller-info from managed node to control node
+            - name: Storing in a path relative to the playbook
+              ansible.builtin.fetch:
+                src: "{{ agent_path }}/appdynamics/controller-info.xml"
+                dest: /tmp/iib-temp/controller-info-{{ inventory_hostname }}.xml
+                flat: yes
+
+            - name: Read application name from controller-info
+              community.general.xml:
+                path: /tmp/iib-temp/controller-info-{{ inventory_hostname }}.xml
+                xpath: '/controller-info/*'
+                content: text
+              register: xml_output
+              vars:
+                ansible_become: false
+              delegate_to: localhost
+            
+            - name: Setting previous agent config dictionary into variable
+              ansible.builtin.set_fact:
+                previous_agent_config: "{{ previous_agent_config | default({}) | combine(item) }}"
+              with_items: "{{ xml_output.matches }}"
+            
+            - name: Logging previous agent config details
+              ansible.builtin.debug:
+                msg: "{{ previous_agent_config }}"
+
+        - name: Setting flag for backup successfull
+          ansible.builtin.set_fact:
+            backup_success: true

@@ -1,0 +1,35 @@
+- name: Merging new config to current config
+  become: true
+  block:
+  - name: Assert if required parameters are defined
+    ansible.builtin.assert:
+      that:
+        - previous_agent_config is defined
+      msg: 'Required Parameters are not defined .Please check the ansible script! if its your first install then please use agent_action: install in playbook'
+    
+  - name: Applying new config for upgrade action
+    ansible.builtin.set_fact:
+        # controller config
+        controller_account_name: "{{ controller_account_name if controller_account_name is defined else previous_agent_config.get('account-name', '') }}"
+        controller_host_name: "{{ controller_host_name if controller_host_name is defined else previous_agent_config.get('controller-host', '') }}"
+        controller_port: "{{ controller_port if controller_port is defined else previous_agent_config.get('controller-port', '') }}"
+        controller_account_access_key: "{{ controller_account_access_key if controller_account_access_key is defined else previous_agent_config.get('account-access-key', '') }}"
+        iib_controller_cert_file: "{{ iib_controller_cert_file if iib_controller_cert_file is defined else previous_agent_config.get('controller-cert-file', '') }}"
+        enable_ssl: "{{ enable_ssl if enable_ssl is defined and enable_ssl else previous_agent_config.get('controller-ssl-enabled', '') }}"
+
+        # proxy config
+        controller_proxy_host: "{{ controller_proxy_host if controller_proxy_host is defined else previous_agent_config.get('controller-proxy-host', '') }}"
+        controller_proxy_port: "{{ controller_proxy_port if controller_proxy_port is defined else previous_agent_config.get('controller-proxy-port', '') }}"
+        controller_proxy_username: "{{ controller_proxy_username if controller_proxy_username is defined else previous_agent_config.get('controller-proxy-username', '') }}"
+        controller_proxy_password: "{{ controller_proxy_password if controller_proxy_password is defined else previous_agent_config.get('controller-proxy-password', '') }}"
+        controller_proxy_password_file: "{{ controller_proxy_password_file if controller_proxy_password_file is defined else previous_agent_config.get('controller-proxy-passwordfile', '') }}"
+
+        # agent config 
+        application_name: "{{ application_name if application_name is defined else previous_agent_config.get('application-name', appd.ansible_facts.appdynamics.app) }}"
+        tier_name: "{{ tier_name if tier_name is defined else previous_agent_config.get('tier-name', appd.ansible_facts.appdynamics.tier) }}"
+        iib_user_exit: "{{ iib_user_exit if iib_user_exit is defined else previous_agent_config.get('user-exit', '') }}"
+        agent_log_level: "{{ agent_log_level if agent_log_level is defined else previous_agent_config.get('log-level', '') }}"
+        iib_log_dir: "{{ iib_log_dir if iib_log_dir is defined else previous_agent_config.get('log-dir', '') }}"
+        iib_flow_level_visibility_enabled:  "{{ iib_flow_level_visibility_enabled if iib_flow_level_visibility_enabled is defined else previous_agent_config.get('flow-level-visibility-enabled', '') }}"
+        iib_node_reuse: "{{ iib_node_reuse if iib_node_reuse is defined else previous_agent_config.get('node-reuse', '') }}"
+        iib_node_reuse_prefix: "{{ iib_node_reuse_prefix if iib_node_reuse_prefix is defined else previous_agent_config.get('node-reuse-prefix', '') }}"

@@ -1,0 +1,35 @@
+- name: Check installed PHP version
+  ansible.builtin.command: "{{ php_path }} -r 'echo PHP_VERSION;'"
+  changed_when: false
+  register: current_php_version
+  ignore_errors: true
+  failed_when: current_php_version.rc > 1
+
+- name: Setting php version pattern for support check
+  ansible.builtin.set_fact:
+    php_version_regex: "{{ current_php_version.stdout.split('.') }}"
+  when: current_php_version.rc == 0
+
+- name: Setting php version pattern without release tag
+  ansible.builtin.set_fact:
+    php_version_without_release_tag: "{{ php_version_regex[0] }}.{{ php_version_regex[1] }}"
+  when: current_php_version.rc == 0
+
+- name: Assert PHP version support for NTS
+  ansible.builtin.assert:
+    that:
+      - php_version_without_release_tag in ['7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2']
+    msg: 'The php version is not support for appdynamics agents .Please install one of these version [7.0, 7.1, 7.2, 7.3, 7.4, 8.0, 8.1, 8.2]'
+  when: not zts_support and current_php_version.rc == 0
+
+- name: Assert PHP version support for ZTS
+  ansible.builtin.assert:
+    that:
+      - php_version_without_release_tag in ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2']
+    msg: 'The php version is not support for appdynamics agents .Please install one of these version [7.2, 7.3, 7.4, 8.0, 8.1, 8.2]'
+  when: zts_support and current_php_version.rc == 0
+
+- name: Assert if php is present in system
+  ansible.builtin.assert:
+    that: current_php_version.rc == 0
+    msg: 'The System doesnt have php installed. Please check the system'

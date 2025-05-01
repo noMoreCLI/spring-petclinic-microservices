@@ -1,0 +1,40 @@
+agent_config:
+  account: "-a={{ agent_config['controller_account_name'] }}@{{ agent_config['controller_account_access_key'] }}"
+  {% if php_executable_path is defined and php_executable_path != "" %}php-executable-path: "-p {{ php_executable_path }}"{% endif %}
+
+  {% if php_extension_dir is defined and php_extension_dir != "" %}php-extension-dir: "-e {{ php_extension_dir }}" {% endif %}
+
+  {%  if php_ini_dir is defined and php_ini_dir != "" %}php-ini-dir: "-i {{ php_ini_dir }}" {% endif %}
+
+  {% if php_version is defined and php_version != "" %}php-version: "-v {{ php_version }}" {% endif %}
+
+  {% if agent_config['enable_ssl'] == '1' %}ssl: "-s"{% endif %}
+
+  {% if agent_config['enable_cli'] == 'On' %}enable-cli: "--enable-cli"{% endif %}
+
+  {% if agent_config['enable_cli_long_running'] == 'On' %}enable-cli-long-running: "--enable-cli-long-running"{% endif %}
+
+  {% if ignore_permissions is defined and ignore_permissions  %}ignore-permissions:  "--ignore-permissions"{% endif %}
+
+  # agent config parameters
+  {% if agent_config['proxy_host'] != "" %}http-proxy-host: "--http-proxy-host={{agent_config['proxy_host']}}"{% endif %}
+
+  {% if agent_config['proxy_port'] != "" %}http-proxy-port: "--http-proxy-port={{agent_config['proxy_port']}}"{% endif %}
+
+  {% if agent_config['proxy_user'] != "" %}http-proxy-user: "--http-proxy-user={{agent_config['proxy_user']}}"{% endif %}
+
+  {% if agent_config['proxy_password_file'] != "" %}http-proxy-password-file: "--http-proxy-password-file={{agent_config['proxy_password_file']}}"{% endif %}
+
+  {% if agent_config['proxy_ctrl_dir'] != "" %}proxy-ctrl-dir: "--proxy-ctrl-dir={{agent_config['proxy_ctrl_dir']}}"{% endif %}
+
+  {% if agent_config['log_directory'] != "" %}log-args: "--log-dir={{agent_config['log_directory']}}"{% endif %}
+
+
+  # controller config parameters
+  controller_host: "{{ agent_config['controller_host'] }}"
+  port: "{{ agent_config['controller_port'] }}"
+  app: "{{ agent_config['applicaion_name'] }}"
+  tier: "{{ agent_config['tier_name'] }}"
+  node: "{{ agent_config['node_name'] }}"
+log_directory: "{{ agent_config['log_directory'] | default('') }}"
+agent_log_level: "{{ agent_config['agent_log_level'] | default('') }}"

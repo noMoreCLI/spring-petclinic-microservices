@@ -1,0 +1,96 @@
+---
+- name: Check if backup config file exists
+  ansible.builtin.stat:
+    path: "{{ agent_path }}/{{ agent_config_file }}"
+  register: config_backup_flag
+
+- name: Preprocessing current agent controller info for backup
+  become: true
+  when: (agent_action == upgrade_string) or (agent_action == install_string and config_backup_flag.stat.exists) 
+  block:
+    - name: Setting custom_agent_ini_file as the agent_ini_file
+      ansible.builtin.set_fact:
+        agent_ini_file_path: "{{ custom_agent_ini_file }}"
+      when: custom_agent_ini_file is defined
+
+    - name: Get appdynamics_agent.ini file path if custom_agent_ini_file is not defined
+      ansible.builtin.shell: "{{ php_path }} -i | grep 'Loaded Configuration File' | awk '{print $NF}' | xargs dirname | xargs -I{} find {} -name {{ ini_file_name }}"
+      register: agent_ini_output
+      changed_when: false
+      ignore_errors: true
+      when: custom_agent_ini_file is not defined
+
+    - name: Setting agent_ini_file_path for default agent actions
+      ansible.builtin.set_fact:
+        agent_ini_file_path: "{{ agent_ini_output.stdout }}"
+      when: custom_agent_ini_file is not defined and agent_ini_output.rc == 0 and agent_ini_output.stdout != ''
+
+    - name: Assert if required parameters are defined
+      ansible.builtin.assert:
+        that:
+          - agent_ini_file_path is defined
+        msg: 'Please provide the appdynamics_agent.ini file path if agent is already installed . If its your first time install please use agent_action: install in your playbook'
+
+    - name: Reading log config xml from agent directory
+      ansible.builtin.shell: "cat {{ agent_path }}/php/conf/appdynamics_agent_log4cxx.xml"
+      changed_when: false
+      register: current_agent_xml_content
+
+    - name: Extract log file value
+      ansible.builtin.set_fact:
+        current_agent_xml_log_tag: "{{ current_agent_xml_content.stdout_lines | select('match', ' <param name=\"file\"') }}"
+
+    - name: Extract agent log level value
+      ansible.builtin.set_fact:
+        current_agent_log_level: "{{ item.split('value=')[1].split('\"')[1] }}"
+      when: "'priority' in item"
+      with_items: "{{ current_agent_xml_content.stdout_lines }}"
+
+    - name: Extract log file path and controller-info variable map
+      ansible.builtin.set_fact:
+        current_log_file_path: "{{ current_agent_xml_log_tag[0].split('value=')[1].split('\"')[1] | dirname }}"
+        controller_info_variable_map: "{{ lookup('file', '{{ role_path }}/files/controller_info_variable_mapping.json') | from_json }}"
+
+    - name: Reading current agent ini file
+      ansible.builtin.shell: "cat {{ agent_ini_file_path }}"
+      changed_when: false
+      register: current_agent_ini_file    
+
+    - name: Setting current config parameters to a dict
+      ansible.builtin.set_fact: 
+        current_agent_ini_dict: "{{ current_agent_ini_dict | default({}) | combine({item.split('=')[0].strip(): item.split('=')[1].strip()}) }}"
+      with_items: "{{ current_agent_ini_file.stdout_lines[1:] }}" # skipping the first index since it would be the section of ini file
+      when: item.strip()[0] != '#'
+
+    - name: Syncing current agent controller details
+      ansible.builtin.set_fact:
+        agent_config: "{{ agent_config | default({}) | combine({item.key: current_agent_ini_dict.get(item.value, '')}) }}"
+      with_dict: "{{ controller_info_variable_map }}"
+      
+    - name: Adding log directory to agent config
+      ansible.builtin.set_fact:
+        agent_config: "{{ agent_config | default({}) | combine({'log_directory': current_log_file_path, 'agent_log_level': current_agent_log_level}) }}"
+
+    - name: Logging current agent config parameters
+      ansible.builtin.debug:
+        msg: "{{ agent_config }}"
+
+    - name: Writting inside the config file and storing it in agent directory
+      ansible.builtin.template:
+        src: templates/config.yaml.j2
+        dest: "{{ agent_path }}/{{ agent_config_file }}"
+        force: true
+        mode: '755'
+      become: true
+      when: agent_config is defined
+
+  rescue:
+    - name: Error occured while doing preprocessing tasks
+      ansible.builtin.debug:
+        msg: 'Error occured while doing preprocessing task cannot sync latest config using old config for {{ agent_action }} failed at - {{ ansible_failed_task.name }}'
+    
+    - name: Notifying to handler for failure
+      ansible.builtin.debug:
+        msg: "Notifying handler for task failure"
+      changed_when: true
+      notify: "Logging for failures"

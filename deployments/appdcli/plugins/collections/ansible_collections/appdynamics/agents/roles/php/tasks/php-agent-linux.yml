@@ -1,0 +1,160 @@
+---
+- name: Agent Linux Block
+  become: true
+  block:
+    - name: Pre-check for php before agent installation
+      ansible.builtin.include_tasks: pre-check.yml
+
+    - name: Autogenerate appdynamics Application, Node , Tier if not given by user
+      block:            
+        - name: Generate App name if not given by user
+          ansible.builtin.set_fact:
+            default_agent_config: "{{ default_agent_config | combine({'applicaion_name': appd.ansible_facts.appdynamics.app}) }}"
+          when: ( application_name is not defined ) or ( application_name is none ) or ( application_name == '' )  
+        
+        - name: Generate Tier name if not given by user
+          ansible.builtin.set_fact:
+            default_agent_config: "{{ default_agent_config | combine({'tier_name': appd.ansible_facts.appdynamics.tier}) }}"
+          when: ( tier_name is not defined ) or ( tier_name is none ) or ( tier_name == '' ) 
+
+        - name: Generate Node name if not given by user
+          ansible.builtin.set_fact:
+            default_agent_config: "{{ default_agent_config | combine({'node_name': appd.ansible_facts.appdynamics.node}) }}"
+          when: ( node_name is not defined ) or ( node_name is none ) or ( node_name == '' )
+
+    - name: Setting enviroment for installation path
+      ansible.builtin.set_fact:
+        php_agent_dest_folder_linux: "{{ php_agent_dest_folder_linux }}"
+        php_agent_dest_file: "{{ php_agent_dest_file }}"
+        agent_path: "{{ agent_path }}"
+
+    - name: Creates if agent directories are not present
+      ansible.builtin.file:
+        path: "{{ agent_path }}"
+        state: directory
+        mode: '755'
+        recurse: true
+
+    - name: Check if agent directory exists
+      ansible.builtin.stat:
+        path: "{{ agent_path }}"
+      register: agent_dir_check
+  
+    - name: Creating install parameters before backup
+      ansible.builtin.include_tasks: preprocessing-config.yml
+
+    - name: Take Backup
+      ansible.builtin.include_tasks: backup.yml
+      when: agent_dir_check.stat.exists
+
+    # uninstalling the agent
+    - name: New agent Installation Tasks
+      when: agent_dir_check.stat.exists
+      block:
+        - name: Uninstalling agent from php modules
+          ansible.builtin.command:
+            chdir: "{{ agent_path }}"
+            cmd: "./install.sh -u"
+          changed_when: false
+          ignore_errors: true # keeping ignore since custom path may or maynot have to agent files
+
+        - name: Cleaning old agent directories
+          ansible.builtin.include_tasks: cleanup-agent.yml
+
+    - ansible.builtin.debug:
+        msg: "Fetching php Agent located at {{ agent_location }} through {{ download_protocol }} transfer"
+
+    - ansible.builtin.include_role:
+        name: appdynamics.agents.fetch_agent
+      vars:
+        agent_destination_path: "{{ agent_path }}/{{ php_agent_dest_file }}"
+        agent_source_location: "{{ agent_location }}"
+        fetch_protocol: "{{ agent_download_protocol }}"
+
+    - name: Unzip tar.bz2 file
+      ansible.builtin.unarchive:
+        src: "{{ agent_path }}/{{ php_agent_dest_file }}"
+        dest: "{{ agent_path }}"
+        mode: '755'
+        remote_src: true
+        extra_opts: [--strip-components=1]
+      changed_when: false
+
+    # Writing new config is action is install by overriding agent_config dict to new/default config
+    - name: Setting enviroment for installation config
+      ansible.builtin.set_fact:
+        agent_config: "{{ default_agent_config }}"
+      when: (agent_action|lower == install_string)
+    
+    # Merging new config with existing config for agent action upgrade
+    - name: This is merge config task
+      ansible.builtin.include_tasks: merge-config.yml
+      when: (agent_action|lower == upgrade_string)
+
+    - name: Writting inside the config file
+      ansible.builtin.template:
+        src: templates/config.yaml.j2
+        dest: "{{ agent_path }}/{{ agent_config_file }}"
+        force: true
+        mode: '755'
+      become: true
+      when: agent_config is defined
+
+    - name: "Read agent-config.yml file from remote source"
+      ansible.builtin.command: "cat {{ agent_path }}/{{ agent_config_file }}"
+      changed_when: false
+      register: config_yml_out
+
+    - name: "Parse agent-config.yml into dict variable"
+      ansible.builtin.set_fact:
+        config_dict: "{{ config_yml_out.stdout | from_yaml }}"
+
+    - name: Setting installation parameters
+      ansible.builtin.set_fact:
+        parameters: "{{ config_dict['agent_config'].values() | join(' ') }}"
+        log_directory: "{{ config_dict['log_directory'] | default('') }}"
+        agent_log_level_tag: "{{ config_dict['agent_log_level'] | default('') }}"
+
+    - name: This is install tasks
+      ansible.builtin.include_tasks: install.yml
+
+  rescue:
+    # Calling handler for task failures
+    - name: Setting error status
+      ansible.builtin.set_fact:
+        error_status: true
+
+    - name: Notifying to handler for failure
+      ansible.builtin.debug:
+        msg: "Notifying handler for task failure"
+      changed_when: true
+      notify: "Logging for failures"
+
+    - name: Error occured during installation Rolling back to previous Version
+      ansible.builtin.debug:
+        msg: 'Error occured while doing installation task failed - {{ ansible_failed_task.name }} Rolling back to previous Version'
+
+    - ansible.builtin.include_tasks: rollback.yml
+      when: is_backup_done is defined and is_backup_done
+
+  always:
+    - name: Clean up of downloaded files
+      ansible.builtin.file:
+        path: "{{ agent_path }}/{{ php_agent_dest_file }}"
+        state: absent
+      changed_when: false # this ensures this task is idempotent
+
+    # cleanup agent zips from backup if needed
+    - name: Cleanup backup
+      block:
+        - name: Check if PHP Agent backup folder exists
+          ansible.builtin.stat:
+            path: "{{ php_agent_backup_folder_linux }}"
+          register: backup_folder
+        - name: Clean backup if it exists
+          ansible.builtin.include_role:
+            name: common
+            tasks_from: remove_backup_based_on_max_count # run common/tasks/remove_backup_based_on_max_count.yaml
+          when: backup_folder.stat.exists
+          vars:
+            agent_backup_folder: "{{ php_agent_backup_folder_linux }}"

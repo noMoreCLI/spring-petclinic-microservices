@@ -1,0 +1,12 @@
+# hardcode agent type to dotnet_msi for this role; this way common logic like fetching the agent knows which artifact to look for
+agent_type: dotnet_msi
+appd_ssl_flag: "{{ 'true' if (enable_ssl | string | lower) in ('on', 'true', 'yes') else 'false' }}"
+appd_tls12_flag: "{{ 'true' if (enable_tls12 | string | lower) in ('on', 'true', 'yes') else 'false' }}"
+
+INSTALL_DIR: '{{ ansible_env.ProgramFiles }}\\AppDynamics\\AppDynamics .NET Agent'
+DOTNETAGENT_DIR: '{{ ansible_env.SystemDrive }}\\ProgramData\\AppDynamics\\DotNetAgent'
+DOTNETAGENT_CONFIG_FILE_PATH: '{{ DOTNETAGENT_DIR }}\\Config\\config.xml'
+DOTNETAGENT_LOG_FILE_PATH: '{{ DOTNETAGENT_DIR }}\Logs\AgentLog.txt'
+
+# How long to wait for Agent coordinator to start
+dotnet_agent_wait_timeout: 120

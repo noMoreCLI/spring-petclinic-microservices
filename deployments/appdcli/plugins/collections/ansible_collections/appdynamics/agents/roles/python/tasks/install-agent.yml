@@ -1,0 +1,157 @@
+---
+# Install Python Agent
+- name: Python Agent Block
+  become: "{{ run_with_root }}"
+  block:
+    - name: Active Python Path
+      ansible.builtin.debug:
+        msg: "{{ python_path }}"
+
+    - name: Take Backup of Previous agent if found
+      ansible.builtin.include_tasks: backup.yml
+
+    # If present clean destination directory removing all files (It does not delete the Directory only files)
+    - name: Remove all Files and Directory from Agent Destination
+      ansible.builtin.include_tasks: "cleanup-agent.yml"
+
+    - when: install_agent_from == 'pypi'
+      block: # Installing using PYPI
+        - name: Installing Python Agent latest using PIP [PYPI]
+          ansible.builtin.pip:
+            name: "{{ python_package_name }}"
+            executable: pip3
+            extra_args: "-i {{ pypi_index_url }} --no-cache-dir"
+          when: agent_version == "latest" and install_env == "default"
+
+        - name: Installing Python Agent specific version using PIP [PYPI]
+          ansible.builtin.pip:
+            name: "{{ python_package_name }}"
+            version: "{{ agent_version }}"
+            executable: pip3
+            extra_args: "-i {{ pypi_index_url }} --no-cache-dir"
+          when: agent_version != "latest" and install_env == "default"
+
+        - name: Installing Python Agent latest in Virtualenv using PIP [PYPI]
+          ansible.builtin.pip:
+            name: "{{ python_package_name }}"
+            virtualenv: "{{ virtualenv_path }}"
+            extra_args: "-i {{ pypi_index_url }} --no-cache-dir"
+          when: agent_version == "latest" and install_env == "virtualenv"
+
+        - name: Installing Python Agent specific version in Virtualenv using PIP [PYPI]
+          ansible.builtin.pip:
+            name: "{{ python_package_name }}"
+            version: "{{ agent_version }}"
+            virtualenv: "{{ virtualenv_path }}"
+            extra_args: "-i {{ pypi_index_url }} --no-cache-dir"
+          when: agent_version != "latest" and install_env == "virtualenv"
+
+    - when: install_agent_from == 'appd-portal'
+      block:  # Installing using Downloaded Zip
+        - ansible.builtin.include_role:
+            name: appdynamics.agents.fetch_agent
+          vars:
+            agent_destination_path: "{{ python_agent_dest_folder }}/{{ python_agent_dest_file }}"
+            agent_source_location: "{{ agent_location }}"
+            fetch_protocol: "{{ agent_download_protocol }}"
+
+        - name: Unzip the Python agent file [AppDPortal]
+          ansible.builtin.unarchive:
+            src: "{{ python_agent_dest_folder }}/{{ python_agent_dest_file }}"
+            dest: "{{ python_agent_dest_folder }}/wheel"
+            mode: '755'
+            remote_src: true
+          changed_when: false
+
+        # Task added as a module as it will be called again in rollback
+        - name: Install Agent from wheel
+          ansible.builtin.include_tasks: install-agent-wheel.yml
+
+        - name: Clean up zip download [AppDPortal]
+          ansible.builtin.file:
+            path: "{{ python_agent_dest_folder }}/{{ python_agent_dest_file }}"
+            state: absent
+          changed_when: false
+
+    - name: Apply Config Values for Template Generation
+      ansible.builtin.include_tasks: apply-config-diff.yml
+
+    - name: Adding new Agent config
+      ansible.builtin.template:
+        src: templates/appdynamics-python-agent.j2
+        dest: "{{ agent_config_path }}"
+        force: true
+        mode: '755'
+      become: "{{ run_with_root }}"
+      when: config_is_set is defined
+
+    - name: Notifying Agent State to Handler
+      ansible.builtin.debug:
+        msg: "Notifying handler for successful Agent install/upgrade"
+      changed_when: true
+      notify: "Verify python agent state"
+
+  rescue:
+    - name: Setting error status
+      ansible.builtin.set_fact:
+        error_status: true
+
+    - name: Notifying Agent State to Handler
+      ansible.builtin.debug:
+        msg: "Notifying handler as Exception occurred"
+      changed_when: true
+      notify: "Set Exception Logs"
+
+    - name: Error occurred while creating backup, Abort after cleanup(if any)
+      when: requirements_file_created is not defined or backup_done is not defined
+      block:
+        - name: Cleanup python-agent-requirements.txt in case zip failed
+          ansible.builtin.file:
+            path: "{{ python_agent_dest_folder }}/python-agent-requirements.txt"
+            state: absent
+          changed_when: false
+          when: backup_done is not defined
+
+        - name: Printing to output file when error occurred during Backup
+          ansible.builtin.debug:
+            msg: "Error occurred while backup Cleanup was done. Task Failed - {{ ansible_failed_task.name }}."
+
+    - name: Printing to output file when error occurred during installation
+      ansible.builtin.debug:
+        msg: "Error occurred while doing Agent install task failed - {{ ansible_failed_task.name }}"
+
+    - name: Restore agent from backup # only if task is upgrade
+      ansible.builtin.include_tasks: rollback.yml
+      when: (agent_action|lower == upgrade_string)
+
+  always:
+    - name: Get ownership information
+      ansible.builtin.stat:
+        path: "{{ python_agent_dest_folder }}"
+      register: ownership_info
+
+    # Changing ownership of files when user is not appdynamics
+    - name: Recursively change ownership of the Python agent directory
+      become: true
+      ansible.builtin.file:
+        path: "{{ python_agent_dest_folder }}"
+        recurse: true
+        owner: "{{ agent_dir_permission.user }}"
+        group: "{{ agent_dir_permission.group }}"
+      changed_when: false
+      when: ownership_info.stat.pw_name != agent_dir_permission.user
+
+    - name: Cleanup backup
+      block:
+        - name: Check if Python Agent backup folder exists
+          ansible.builtin.stat:
+            path: "{{ python_agent_backup_folder }}"
+          register: backup_folder
+
+        - name: Clean backup if it exists
+          ansible.builtin.include_role:
+            name: common
+            tasks_from: remove_backup_based_on_max_count # run common/tasks/remove_backup_based_on_max_count.yaml
+          when: backup_folder.stat.exists
+          vars:
+            agent_backup_folder: "{{ python_agent_backup_folder }}"

@@ -1,0 +1,27 @@
+---
+- name: Install PHP Agent
+  hosts: all
+  tasks:
+    - name: Include variables for the controller settings
+      ansible.builtin.include_vars:
+        # Include all yaml files under the vars directory
+        dir: vars
+        extensions:
+          - 'yaml'
+          - 'yml'
+
+    - name: Adding php role for agent installation
+      ansible.builtin.include_role:
+        name: appdynamics.agents.php
+      vars:
+        # Define Agent Type and Version
+        create_appdynamics_user: true
+        agent_version: latest
+        agent_type: php
+        agent_action: upgrade
+        application_name: app
+        tier_name: tier
+        node_name: node
+        log_directory: "/opt/appdynamics/php-agent/appd_logs"
+        zts_support: false
+        #linux_custom_agent_install_path: "/opt/appdynamics/custom-path"

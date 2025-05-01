@@ -1,0 +1,28 @@
+# IIB Agent Linux
+
+agent_dir_permission:
+  user: "{{ appdynamics_user }}"
+  group: "{{ appdynamics_group }}"
+
+iib_agent_dest_file: "iib-agent.zip"
+agent_path: "{{ linux_custom_agent_install_path | default(iib_agent_dest_folder) }}"
+install_action: ['{{ install_string }}', '{{ upgrade_string }}']
+
+# defaults file for IIB agent
+iib_flow_level_visibility_enabled: "0"
+iib_log_dir: "{{ iib_agent_dest_folder }}/agent/logs"
+iib_log_level: "info"
+iib_user_exit: "defaultuserexit"
+iib_node_reuse: "false"
+iib_node_reuse_prefix: ""
+iib_controller_cert_file: ""
+
+# Controller Proxy settings
+controller_proxy_host: "localhost"
+controller_proxy_port: "9090"
+controller_proxy_username: "joe"
+controller_proxy_password: "12345"
+controller_proxy_passwordfile: ""
+
+# Error flag
+error_status: false

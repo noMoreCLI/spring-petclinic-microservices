@@ -1,0 +1,85 @@
+- name: Verify IIB agent installed
+  ansible.builtin.stat:
+    path: "{{ agent_path }}/appdynamics/libIIBAgent.lel"
+  register: agent_status
+
+- name: Search for Agent Version in Version.txt file
+  ansible.builtin.command: "grep '* Agent version -- '  {{ agent_path }}/appdynamics/VERSION.txt"
+  register: search_result
+  changed_when: false
+  when: agent_status.stat.exists
+
+- name: Set Agent version
+  ansible.builtin.set_fact:
+    agent_ver: "{{ search_result.stdout.split('--')[-1] }}"
+  when: agent_status.stat.exists
+
+- name: Find backed up agent files from backup dir
+  ansible.builtin.find:
+    path: "{{ iib_agent_backup_folder }}"
+    patterns: 'agent*'
+  register: backup_files
+  become: true
+
+- name: Set backup count
+  ansible.builtin.set_fact:
+    agentfiles: "{{ backup_files.files }}"
+
+- name: Check if config File present
+  ansible.builtin.stat:
+    path: "{{ agent_path }}/appdynamics/controller-info.xml"
+  register: config_found
+  become: true
+
+- name: Find Tier
+  ansible.builtin.command: "grep '<tier-name>' {{ agent_path }}/appdynamics/controller-info.xml"
+  register: tier_result
+  changed_when: false
+  when: config_found.stat.exists
+
+- name: Find Application
+  ansible.builtin.command: "grep '<application-name>' {{ agent_path }}/appdynamics/controller-info.xml"
+  register: app_result
+  changed_when: false
+  when: config_found.stat.exists
+
+- name: Find UserExits
+  ansible.builtin.command: "grep '<user-exit>' {{ agent_path }}/appdynamics/controller-info.xml"
+  register: userexit_result
+  changed_when: false
+  when: config_found.stat.exists
+
+- name: Set config status dict
+  ansible.builtin.set_fact:
+    config:
+      application: "{{ app_result.stdout.split('</')[-2].split('>')[-1] }}"
+      tier: "{{ tier_result.stdout.split('</')[-2].split('>')[-1] }}"
+      userexit: "{{ userexit_result.stdout.split('</')[-2].split('>')[-1] }}"
+  when: config_found.stat.exists
+
+- name: Transform Playbook run information to standard format
+  ansible.builtin.set_fact:
+    run_info:
+      playbook_run_summary: "This Run was related to Agent {{ agent_action }}"
+      current_agent_version_on_target: "{{ agent_ver }}"
+      backup_count_on_target: "{{ agentfiles | count if agentfiles is defined else 0 }}"
+      backup_path: "{{ iib_agent_backup_folder if (agent_action | lower != uninstall_string) else '' }}"
+      agent_path: "{{ agent_path if (agent_action | lower != uninstall_string) else '' }}"
+      config_info: "{{ config if config is defined else {} }}"
+  when: ( agent_action|lower != uninstall_string )
+
+- name: Transform Playbook run information to standard format
+  ansible.builtin.set_fact:
+    run_info:
+      playbook_run_summary: "This Run was related to Agent {{ agent_action }}"
+      backup_count_on_target: "{{ agentfiles | count }}"
+      keep_backup: "{{ keep_backup }}"
+  when: ( agent_action|lower == uninstall_string )
+
+- name: Print Run information
+  ansible.builtin.debug:
+    msg: "{{ run_info }}"
+
+- name: appdynamics_agent_status iib
+  ansible.builtin.debug:
+    msg: "{{ run_info | to_nice_json }}"

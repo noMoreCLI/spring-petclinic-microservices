@@ -1,0 +1,57 @@
+- name: Agent backup block
+  become: true
+  block:
+    - name: Common Backup part (to backup node agent version)
+      block:
+      - name: Checking if Node Agent Already installed
+        ansible.builtin.shell: "grep -i 'appdynamics' {{ node_agent_dest_folder }}/package.json"
+        register: old_agent_found
+        ignore_errors: True
+
+      - name: Create Node Agent Backup folder
+        ansible.builtin.file:
+          path: "{{ node_agent_backup_folder }}/"
+          state: directory
+          mode: 0775
+        when: old_agent_found.rc == 0
+
+      - name: Filter the node agent version to be backed version from variable
+        ansible.builtin.set_fact:
+          version: "{{ old_agent_found.stdout | regex_search('(\\^|~)\\d+\\.\\d+\\.\\d+') }}"
+        when: old_agent_found.rc == 0
+     
+      - name: Create a appdynamics version text file
+        ansible.builtin.copy:
+          dest: "{{ node_agent_backup_folder }}/appd-version.txt"
+          content: "{{ version }}"
+          mode: 0755
+        when: old_agent_found.rc == 0
+
+      - name: Read the version to be backed of appd 
+        ansible.builtin.slurp:
+          src: "{{ node_agent_backup_folder }}/appd-version.txt"
+        register: version
+        when: old_agent_found.rc == 0
+
+      - name: Print the backed up version of appd 
+        ansible.builtin.debug: 
+          msg: "the value of appd-version.txt is {{ version['content'] | b64decode }}"
+        when: old_agent_found.rc == 0
+        
+      - name: Check if appd-config exists
+        ansible.builtin.stat:
+          path: "{{ node_agent_dest_folder }}/appd-config.js"
+        register: config_exists
+
+      - name: Backing up appd-config file in case it exists
+        ansible.builtin.command: "cp {{ node_agent_dest_folder }}/appd-config.js {{ node_agent_backup_folder }}/"
+        when: config_exists.stat.exists
+
+      - name: appdynamics_agent_status node agent success log
+        ansible.builtin.debug:
+          msg: '{ "agentBackup": "Appdynamics Node agent backup success" }'
+
+  rescue:
+    - name: appdynamics_agent_status Backup Task Failed
+      ansible.builtin.debug:
+        msg: '{ "agentBackup": "Error Occurred while taking backup." }'

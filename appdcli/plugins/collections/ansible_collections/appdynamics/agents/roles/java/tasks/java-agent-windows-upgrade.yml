@@ -1,0 +1,101 @@
+- when: java_agent_already_exists
+  block:
+    - ansible.builtin.set_fact:
+        installing_agent_version: "{{ agent_version.split('.') }}" #should be major.minor.patch
+        existing_agent_version: "{{ backup_version.split('.') }}"
+
+    - ansible.builtin.fail:
+        msg: "WARNING - Playbook is executing a downgrade from existing version {{ backup_version }} to {{ agent_version }}. Agent action defined is {{ agent_action }}."
+      ignore_errors: true
+      when: >
+        installing_agent_version | length > 2 and
+        existing_agent_version | length > 2 and
+        (installing_agent_version.0 | int < existing_agent_version.0 | int or
+        (installing_agent_version.0 | int == existing_agent_version.0 | int and installing_agent_version.1 | int < existing_agent_version.1 | int) or
+        (installing_agent_version.0 | int == existing_agent_version.0 | int and installing_agent_version.1 | int == existing_agent_version.1 | int and installing_agent_version.2 | int < existing_agent_version.2 | int))
+
+- ansible.builtin.debug:
+    msg: "Fetching Java Agent located at {{ agent_location }} through {{ download_protocol }} transfer"
+
+- ansible.builtin.include_role:
+    name: appdynamics.agents.fetch_agent
+  vars:
+    agent_destination_path: '{{ java_agent_dest_folder }}/{{ java_agent_dest_file }}'
+    agent_source_location: '{{ agent_location }}'
+    fetch_protocol: '{{ agent_download_protocol }}'
+
+- name: Unzip the Java agent
+  community.windows.win_unzip:
+    src: "{{ java_agent_dest_folder }}/{{ java_agent_dest_file }}"
+    dest: "{{ java_agent_dest_folder }}"
+    remote_src: yes
+  changed_when: false
+
+# requires Powershell 5 due to -Depth
+# - name: "Get version folder name"
+#   win_shell: "(Get-ChildItem {{ java_agent_dest_folder }} -Recurse -Depth 1 | Where{$_.Name -Match 'ver*'}  | Select-Object -ExpandProperty Name).Trim()"
+#   register: ver
+#   changed_when: false
+
+- name: Find the version specific directory name
+  ansible.windows.win_find:
+    paths: "{{ java_agent_dest_folder }}"
+    patterns: "ver*"
+    file_type: directory
+  register: result
+
+- name: Set the version folder fact
+  ansible.builtin.set_fact:
+    java_agent_ver_folder: "{{ result.files[0].path }}" # "{{ ver.stdout | regex_replace ('\\r\\n', '') }}"
+
+- ansible.builtin.debug:
+    msg: "{{ java_agent_ver_folder }}"
+
+- when: (java_agent_backup_config_folder is defined and java_agent_backup_config_folder | length > 0)
+  block:
+    - ansible.windows.win_stat:
+        path: "{{ java_agent_backup_config_folder }}/conf"
+      register: backup_conf_folder
+    - ansible.windows.win_stat:
+        path: "{{ java_agent_backup_config_folder }}/ver/conf"
+      register: backup_ver_conf_folder
+
+    - name: Retrieve agent configs of previous agent
+      ansible.windows.win_copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        remote_src: true
+      changed_when: false
+      with_items:
+        - { filename: "{{ backup_conf_folder }}", src: "{{ java_agent_backup_config_folder }}/conf",
+            dest: "{{ java_agent_dest_folder }}/" }
+        - { filename: "{{ backup_ver_conf_folder }}", src: "{{ java_agent_backup_config_folder }}/ver/conf",
+            dest: "{{ java_agent_ver_folder }}/" }
+      when: (item.filename).stat.exists
+      loop_control:
+        label: "{{ item.src }}"
+
+    - name: Merging controller-info.xml with args.yaml
+      ansible.builtin.include_tasks: merging-controller-info.yml
+
+- name: Agent config generation in case of Fresh install
+  when: not java_agent_already_exists
+  block:
+    - name: Configure Java agent's controller-info.xml
+      ansible.builtin.template:
+        src: templates/application-agent-controller-info.xml.j2
+        dest: "{{ java_agent_dest_folder }}/conf/controller-info.xml"
+      changed_when: false
+
+    - name: Copy controller-info.xml to the versioned agent folder
+      ansible.windows.win_shell: "Copy-Item  {{ java_agent_dest_folder }}/conf/controller-info.xml  {{ java_agent_ver_folder }}/conf/ -Force"
+      changed_when: false
+
+    # Update the Log4j setting to apply the desired log level to all the loggers
+    # listed in the {{agent_loggers}} list.
+- name: Set the log level on the agent (if != info, which it is by default)
+  ansible.builtin.include_role:
+    name: logger
+  vars:
+    logger_role_standalone: false # the role is not being used on its own (so we need not check if the agent dir exists for example )
+  when: agent_log_level|lower != 'info'

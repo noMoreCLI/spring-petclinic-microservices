@@ -1,0 +1,29 @@
+---
+- name: Install Appdynamics SmartAgent on Windows
+  delegate_to: localhost
+  become: false
+  block:
+
+    - name: Set windows download url
+      set_fact:
+        windows_download_path_control_node: "/tmp/appdsmartagent_64_windows_{{ agent_ver }}.zip"
+        windows_download_url: "{{ download_uri | default(download_url + '/appdsmartagent/' + agent_ver + '/appdsmartagent_None_windows_' + agent_ver + '.zip') }}"
+        windows_installer_dest_path: "C:\\Users\\Administrator\\AppData\\Local\\Temp\\appdsmartagent_64_windows_{{ agent_ver }}.zip"
+
+    - name: Windows download message
+      debug:
+        msg: "downloading installer from {{ windows_download_url }} for Windows hosts"
+
+    - name: Set windows install file location
+      ansible.builtin.stat:
+        path: "{{ windows_download_path_control_node }}"
+      register: smartagent_install_file_windows
+
+    - name: Download file if it doesn't exist
+      ansible.builtin.get_url:
+        url: "{{ windows_download_url }}"
+        dest: "{{ windows_download_path_control_node }}"
+        force: true
+        url_username: "{{ lookup('env', 'CUSTOM_HTTP_USERNAME') if lookup('env', 'ENABLE_CUSTOM_HTTP') is defined and lookup('env', 'CUSTOM_HTTP_USERNAME') else omit }}"
+        url_password: "{{ lookup('env', 'CUSTOM_HTTP_PASSWORD') if lookup('env', 'ENABLE_CUSTOM_HTTP') is defined and lookup('env', 'CUSTOM_HTTP_PASSWORD') else omit }}"
+      when: not smartagent_install_file_windows.stat.exists

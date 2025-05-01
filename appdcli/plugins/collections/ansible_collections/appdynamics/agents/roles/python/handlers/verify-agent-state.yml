@@ -1,0 +1,74 @@
+- name: Verify python agent installed
+  ansible.builtin.shell: "{{ python_path }} freeze | sed -n -e '/^appdynamics[=,@,-alpine]/p'"
+  register: agent_status
+  ignore_errors: true
+  become: "{{ run_with_root }}"
+
+- name: Finding installed Version
+  ansible.builtin.shell: "{{ python_path }} show appdynamics | grep Version | awk '{print $2}'"
+  register: version
+  when: agent_status.rc == 0
+
+- name: Set Agent version
+  ansible.builtin.set_fact:
+    agent_ver: "{{ version.stdout | default('Not Found') }}"
+
+- when: (agent_action|lower != uninstall_string)
+  block:
+    - name: Find backed up agent files from backup dir
+      ansible.builtin.find:
+        path: "{{ python_agent_backup_folder }}"
+        patterns: 'agent*'
+      register: backup_files
+      become: "{{ run_with_root }}"
+
+    - name: Set backup count
+      ansible.builtin.set_fact:
+        backup_files_count: "{{ backup_files.files | count }}"
+
+    - name: Check if config File present
+      ansible.builtin.stat:
+        path: "{{ agent_config_path }}"
+      register: config_found
+      become: "{{ run_with_root }}"
+
+    - name: Open the Config File
+      ansible.builtin.shell: "cat {{ agent_config_path }}"
+      register: config_data
+      changed_when: false
+      become: "{{ run_with_root }}"
+      when: config_found.stat.exists
+
+    - name: Extract Controller File information
+      ansible.builtin.set_fact:
+        app: "{{ config_data.stdout | regex_search('\napp=.+\n') | replace('\n', '') }}"
+        node: "{{ config_data.stdout | regex_search('\nnode=.+\n') | replace('\n', '') }}"
+        tier: "{{ config_data.stdout | regex_search('\ntier=.+\n') | replace('\n', '') }}"
+      when: config_found.stat.exists
+
+    - name: Set config status dict
+      ansible.builtin.set_fact:
+        config:
+          application: "{{ app.split('=')[-1] if app is defined else '' }}"
+          tier: "{{ tier.split('=')[-1] if app is defined else '' }}"
+          node: "{{ node.split('=')[-1] if app is defined else '' }}"
+
+- name: Transform Playbook run information to standard format
+  ansible.builtin.set_fact:
+    run_info:
+      playbook_run_summary: "This Run was related to Agent {{ agent_action }}"
+      current_agent_version_on_target: "{{ agent_ver }}"
+      backup_count_on_target: "{{ backup_files_count if backup_files_count is defined else 0 }}"
+      installed_from: "{{ install_agent_from if (agent_action | lower != uninstall_string) else '' }}"
+      install_environment: "{{ install_env if (agent_action | lower != uninstall_string) else '' }}"
+      backup_path: "{{ python_agent_backup_folder if (agent_action | lower != uninstall_string) else '' }}"
+      agent_path: "{{ python_agent_dest_folder if (agent_action | lower != uninstall_string) else '' }}"
+      config_info: "{{ config if config is defined else {} }}"
+
+- name: Print Run information
+  ansible.builtin.debug:
+    msg: "{{ run_info }}"
+
+- name: appdynamics_agent_status python
+  ansible.builtin.debug:
+    msg: "{{ run_info | to_nice_json }}"

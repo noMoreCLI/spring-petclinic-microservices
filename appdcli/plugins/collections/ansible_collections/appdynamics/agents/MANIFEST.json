@@ -1,0 +1,34 @@
+{
+ "collection_info": {
+  "namespace": "appdynamics",
+  "name": "agents",
+  "version": "23.7.0",
+  "authors": [
+   "Cisco AppDynamics"
+  ],
+  "readme": "README.md",
+  "tags": [
+   "monitoring",
+   "apm",
+   "performance",
+   "agent",
+   "appdynamics"
+  ],
+  "description": "Install and Configure AppDynamics agents",
+  "license": [],
+  "license_file": "LICENSE",
+  "dependencies": {},
+  "repository": "https://docs.appdynamics.com/appd/23.x/latest/en/application-monitoring/install-app-server-agents/agent-management/standalone-host-platforms/ansible",
+  "documentation": "https://docs.appdynamics.com/appd/23.x/latest/en/application-monitoring/install-app-server-agents/agent-management/standalone-host-platforms/ansible",
+  "homepage": "https://docs.appdynamics.com/appd/23.x/latest/en/application-monitoring/install-app-server-agents/agent-management/standalone-host-platforms/ansible",
+  "issues": "https://appdynamics.zendesk.com"
+ },
+ "file_manifest_file": {
+  "name": "FILES.json",
+  "ftype": "file",
+  "chksum_type": "sha256",
+  "chksum_sha256": "334c0ae08bb89f93911e17753566da181b31d0c11fecdf2de825b8b6c9eda380",
+  "format": 1
+ },
+ "format": 1
+}

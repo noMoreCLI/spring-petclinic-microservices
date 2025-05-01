@@ -1,0 +1,62 @@
+- name: Wait for AppDynamics.Agent.Coordiantor process
+  community.windows.win_wait_for_process:
+    process_name_pattern: 'AppDynamics.Coordinator'
+    state: present
+    timeout: "{{ dotnet_agent_wait_timeout }}"
+
+- name: Restart AppDynamics.Agent.Coordiantor service
+  ansible.windows.win_service:
+    name: "AppDynamics.Agent.Coordinator_service"
+    state: "restarted"
+
+- name: Check .NET Agent MSI is healthy
+  ansible.windows.win_shell: 'Get-Content {{ DOTNETAGENT_LOG_FILE_PATH }} -Tail 30'
+  register: agent_log
+  failed_when: >
+    agent_log.rc != 0 or
+    "Failed to initialize coordinator service" is in agent_log.stdout or
+    "There is an error in XML document" is in agent_log.stdout
+  #Consider as Smoke test, since it only checks last 30 lines
+
+# unfortunately we cannot use ansible.windows.win_wait_for because it will look thru the entire log file and we need recent log messages
+- name: Check .NET Agent MSI is registered
+  ansible.windows.win_shell: 'Get-Content {{ DOTNETAGENT_LOG_FILE_PATH }} -Tail 50'
+  register: agent_registration
+  retries: 3
+  delay: 10
+  until:
+   - agent_registration.rc == 0
+   - '"Auto agent registration SUCCEEDED" is in agent_registration.stdout or "Could not connect to the controller" is in agent_registration.stdout'
+  failed_when: agent_registration is failed or "Could not connect to the controller" is in agent_registration.stdout
+  ignore_errors: 'true'
+
+- name: Get .Net Agent MSI Registration Info
+  ansible.builtin.set_fact:
+    registration_info:
+      agentStarted: '{{ agent_registration is not failed }}'
+      UniqueHostName: '{{ agent_registration.stdout | regex_search("RegistrationChannel setting unique host information Host Name \[([^\]]+)\]", "\1") | default([""], true) | first }}'
+      ApplicationName: '{{ agent_registration.stdout | regex_search("RegistrationChannel setting agent application \[([^\]]+)\]", "\1") | default([""], true) | first }}'
+      TierName: '{{ agent_registration.stdout | regex_search("RegistrationChannel setting agent tier name \[([^\]]+)\]", "\1") | default([""], true) | first }}'
+      NodeName: '{{ agent_registration.stdout | regex_search("RegistrationChannel setting agent node name \[([^\]]+)\]", "\1") | default([""], true) | first }}'
+      MachineId: '{{ agent_registration.stdout | regex_search("MachineAgentManager Registered machine/collector agent with machine ID \[([^\]]+)\]", "\1") | default([""], true) | first }}'
+
+- name: 'appdynamics_agent_status {{ agent_type }}'
+  ansible.builtin.debug:
+    msg: '{{ registration_info | to_json }}'
+
+# if the agent did not register with the controller it is not considered as an error for the result
+- name: Set .Net Agent MSI Result Fact
+  ansible.builtin.set_fact:
+    appdynamics_agent_result:
+      app: '{{ registration_info.ApplicationName }}'
+      tier: '{{ registration_info.TierName }}'
+      node: '{{ registration_info.NodeName }}'
+      error: false
+      install_path: '{{ INSTALL_DIR }}'
+      agent_type: '{{ agent_type }}'
+      agent_version: '{{ dotnet_msi_agent_version }}'
+      action: '{{ agent_action }}'
+
+- name: appdynamics.agent.result
+  ansible.builtin.debug:
+    msg: '{{ appdynamics_agent_result | to_json }}'

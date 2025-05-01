@@ -1,0 +1,88 @@
+- name: Verify apache agent installed
+  ansible.builtin.stat:
+    path: "{{ apache_agent_dest_folder }}/appdynamics-sdk-native/VERSION.txt"
+  register: existing_agent
+  
+- when: existing_agent.stat.exists
+  block:
+    - name: Get version_file data
+      ansible.builtin.shell: "cat {{ apache_agent_dest_folder }}/appdynamics-sdk-native/VERSION.txt"
+      register: version_file
+      changed_when: true
+    
+    - name: Set Version Value
+      ansible.builtin.set_fact:
+        version_value: "{{ version_file.stdout | regex_replace('^(\\d+\\.\\d+\\.\\d+)GA-.+\\.(\\d+)$', '\\1.\\2') }}"
+
+- name: Find backed up agent files from backup dir
+  ansible.builtin.find:
+    path: "{{ apache_agent_backup_folder_linux }}"
+    patterns: 'agent*'
+  register: backup_files
+  when: (agent_action|lower != uninstall_string)
+
+- name: Set backup count
+  ansible.builtin.set_fact:
+    agentfiles: "{{ backup_files.files }}"
+  when: (agent_action|lower != uninstall_string)
+
+- when: (agent_action|lower != uninstall_string)
+  block:
+    - name: Set Config path for custom path
+      ansible.builtin.set_fact:
+        config_path: "{{ custom_agent_config_path }}"
+      when: custom_agent_config_path is defined
+    
+    - name: Set Config path
+      ansible.builtin.set_fact:
+        config_path: "{{ apache_agent_dest_folder }}/appdynamics-sdk-native/conf/appdynamics_agent.conf"
+      when: custom_agent_config_path is not defined
+    
+    - name: Check if config File present
+      ansible.builtin.stat:
+        path: "{{ config_path }}"
+      register: config_found
+      changed_when: true
+
+    - name: Get Application name
+      ansible.builtin.shell: "grep -E '^AppDynamicsApplication\\s+(.*)$' {{ config_path }} | awk '{print $2}'"
+      register: app
+      when: config_found.stat.exists
+      changed_when: true
+    
+    - name: Get Tier name
+      ansible.builtin.shell: "grep -E '^AppDynamicsTier\\s+(.*)$' {{ config_path }} | awk '{print $2}'"
+      register: tier
+      when: config_found.stat.exists
+      changed_when: true
+    
+    - name: Get Node name
+      ansible.builtin.shell: "grep -E '^AppDynamicsNode\\s+(.*)$' {{ config_path }} | awk '{print $2}'"
+      register: node
+      when: config_found.stat.exists
+      changed_when: true
+
+    - name: Set config status dict
+      ansible.builtin.set_fact:
+        config:
+          application: "{{ app.stdout if app is defined else '' }}"
+          tier: "{{ tier.stdout if tier is defined else '' }}"
+          node: "{{ node.stdout if node is defined else '' }}"
+
+- name: Transform Playbook run information to standard format
+  ansible.builtin.set_fact:
+    run_info:
+      playbook_run_summary: "This Run was related to Agent {{ agent_action }}"
+      current_agent_version_on_target: "{{ version_value if version_value is defined else '' }}"
+      backup_count_on_target: "{{ agentfiles | count if agentfiles is defined else 0 }}"
+      backup_path: "{{ apache_agent_backup_folder_linux if (agent_action | lower != uninstall_string) else '' }}"
+      agent_path: "{{ apache_agent_dest_folder if (agent_action | lower != uninstall_string) else '' }}"
+      config_info: "{{ config if config is defined else {} }}"
+
+- name: Print Run information
+  ansible.builtin.debug:
+    msg: "{{ run_info }}"
+
+- name: appdynamics_agent_status apache
+  ansible.builtin.debug:
+    msg: "{{ run_info | to_nice_json }}"

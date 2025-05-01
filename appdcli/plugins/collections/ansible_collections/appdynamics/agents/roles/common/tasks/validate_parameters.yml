@@ -1,0 +1,189 @@
+---
+- name: "Validate agent_action"
+  ansible.builtin.assert:
+    that: agent_action|lower in allowed_actions
+    msg: 'Please choose one among the allowed actions: {{ allowed_actions }}. Defaults to "upgrade" when unspecified. agent_action value specified - {{ agent_action }}'
+
+- ansible.builtin.debug:
+    msg: "'agent_action' variable specified as '{{ agent_action }}'"
+
+- name: Validate if agent_type specified
+  ansible.builtin.assert:
+    that: agent_type is defined
+    msg: 'agent type must be provided. Refer to https://github.com/Appdynamics/download-appdynamcis-agents#supported-agent-types'
+
+- name: "Validate Agent Types"
+  ansible.builtin.assert:
+    that: agent_type in supported_agent_types
+    msg: 'Currently the supported agents are: {{ supported_agent_types }}, please choose a supported agent type'
+
+- ansible.builtin.debug:
+    msg: "'agent_type' variable specified as '{{ agent_type }}'"
+
+- ansible.builtin.set_fact:
+    allowed_custom_install_path: "{{ machine_agent_dest_folder_linux }}"
+  when: agent_type == 'machine' and ansible_os_family != 'Windows'
+- ansible.builtin.set_fact:
+    allowed_custom_install_path: "{{ machine_agent_dest_folder_win }}"
+  when: agent_type == 'machine' and ansible_os_family == 'Windows'
+- ansible.builtin.set_fact:  # allow opt/appdynamics/java-agent path to be specified as linux_custom_agent_install_path
+    allowed_custom_install_path: "{{ java_agent_dest_folder_linux }}"
+  when: agent_type is search('java')  and ansible_os_family != 'Windows'
+- ansible.builtin.set_fact:
+    allowed_custom_install_path: "{{ java_agent_dest_folder_win }}"
+  when: agent_type is search('java') and ansible_os_family == 'Windows'
+- ansible.builtin.set_fact:
+    allowed_custom_install_path: "{{ apache_agent_dest_folder }}"
+  when: agent_type is search('apache')
+- ansible.builtin.set_fact:
+    allowed_custom_install_path: "{{ php_agent_dest_folder_linux }}"
+  when: agent_type is search('php')
+- ansible.builtin.set_fact:
+    allowed_custom_install_path: "{{ iib_agent_dest_folder }}"
+  when: agent_type is search('iib')
+
+#CASE sensitivity is assumed for validation of the path provided in linux_custom_agent_install_path, or windows_custom_agent_install_path
+- name: Validate agent install path for linux
+  ansible.builtin.assert:
+    that: not agent_install_folders_list == agent_reserved_path_prefix_list #should not be a reserved path or it's prefix
+    msg: 'Agent installation folder contain contents of Appdynamics installation root folder which results in wrong installation behaviour. Agent custom installation directory is {{ linux_custom_agent_install_path }}. FAILED, because installation path contains contents of {{ item }} reserved folder.'
+  vars:
+    agent_install_folders_depth: "{{ linux_custom_agent_install_path.split('/') | select() | length }}"
+    agent_install_folders_list: "{{ (linux_custom_agent_install_path.split('/') | select()) }}"
+    agent_reserved_path_prefix_list: "{{ (item.split('/') | select())[: agent_install_folders_depth | int] }}"
+  with_items: "{{ reserved_paths_linux_root }}"
+  when: ansible_os_family != 'Windows' and linux_custom_agent_install_path is defined and agent_install_folders_list == agent_reserved_path_prefix_list and allowed_custom_install_path is defined and item != allowed_custom_install_path
+
+- name: Validate agent install path for windows
+  ansible.builtin.assert:
+    that: not agent_install_folders_list == agent_reserved_path_prefix_list
+    msg: 'Agent installation folder contain contents of Appdynamics installation root folder which results in wrong installation behaviour. Agent custom installation directory is {{ windows_custom_agent_install_path }}. FAILED, because installation path contains contents of {{ item }} reserved folder.'
+  vars:
+    win_separator: '\'
+    custom_agent_path_forward_separator: "{{ windows_custom_agent_install_path | replace(win_separator, '/') }}"
+    agent_reserved_path_forward_separator: "{{ item | replace(win_separator, '/') }}"
+    agent_install_folders_depth: "{{ custom_agent_path_forward_separator.split('/') | select() | length }}"
+    agent_install_folders_list: "{{ (custom_agent_path_forward_separator.split('/') | select()) }}"
+    agent_reserved_path_prefix_list: "{{ (agent_reserved_path_forward_separator.split('/') | select())[: agent_install_folders_depth | int] }}"
+  with_items: "{{ reserved_paths_windows_root }}"
+  when: ansible_os_family == 'Windows' and windows_custom_agent_install_path is defined and agent_install_folders_list == agent_reserved_path_prefix_list and allowed_custom_install_path is defined and item != allowed_custom_install_path
+
+# Validate block in case of non-rollback scenarios.
+- when: init_and_validate_agent_variables and (agent_action|lower != rollback_string)
+  block:
+
+  - name: Assign Version to latest if not specified
+    ansible.builtin.set_fact:
+      agent_version: "latest"
+    when: (agent_version is not defined) or (agent_version|string|length == 0)
+
+  - ansible.builtin.set_fact:
+      is_general_custom_install:  "{{ download_uri is defined and download_uri | length > 1 }}"
+
+  - ansible.builtin.set_fact:
+      is_agent_specific_custom_install: "{{ agent_type in ['python', 'node', 'smartagent'] and install_agent_from != 'appd-portal' }}"
+
+  - ansible.builtin.set_fact:
+      agent_location: "{{ download_uri }}"
+    when: is_general_custom_install|bool
+
+  - name: Validate download protocol for custom downloads
+    ansible.builtin.assert:
+      that: download_protocol in supported_download_protocols
+      msg: 'The supported download protocols for custom URIs are: {{ supported_download_protocols }}'
+    when: is_general_custom_install | bool
+
+  - name: Set fact for download_protocol to make it readable globally
+    ansible.builtin.set_fact:
+      agent_download_protocol: '{{ download_protocol }}'
+
+  - name: "Validate agent_version"
+    ansible.builtin.assert:
+      that: agent_version is defined and agent_version|string is regex("^\d+\.\d+\.\d+(?:\.\d+){0,1}$|^latest$")
+      msg: 'The agent_version should follow pattern: major_version.minor_version.patch_version, ex: 23.1.0 (use 0 for patch_version if unknown). In case of Python 4-octet verison number will be required'
+    when: not is_general_custom_install | bool
+
+  - name: Validate application_name
+    ansible.builtin.assert:
+      that: application_name is defined
+      msg: 'An application_name must be provided'
+    when: agent_type is not search("machine|db|java|dotnet_msi|apache|python|iib|php|node") # Do not enforce application_name for agent_type that choose to handle it on their own
+
+  - name: Validate tier_name
+    ansible.builtin.assert:
+      that: tier_name is defined
+      msg: 'A tier name must be provided'
+    when: agent_type is not search("machine|db|java|dotnet_msi|apache|python|iib|php|node") # Do not enforce tier_name for agent_type that choose to handle it on their own
+
+  - name: Validate username is less than or equal to 8 char in AIX if create_appdynamics_user is set to true
+    ansible.builtin.assert:
+      that: appdynamics_user | length < 9
+      msg: "Please set appdynamics_user with length < 9 as AIX supports username less than 9 characters. Current username supplied - {{ appdynamics_user }}"
+    when: agent_type == 'iib' and ansible_os_family == 'AIX' and create_appdynamics_user | bool
+
+  - name: Validate groupname is less than or equal to 8 char in AIX if create_appdynamics_user is set to true
+    ansible.builtin.assert:
+      that: appdynamics_group | length < 9
+      msg: "Please set appdynamics_group with length < 9 as AIX supports username less than 9 characters. Current username supplied - {{ appdynamics_group }}"
+    when: agent_type == 'iib' and ansible_os_family == 'AIX' and create_appdynamics_user | bool
+
+  - name: Validate controller_account_access_key
+    ansible.builtin.assert:
+      that: controller_account_access_key is defined
+      msg: 'A controller_account_access_key must be provided'
+
+  - name: Validate controller_global_analytics_account_name
+    ansible.builtin.assert:
+      that: controller_global_analytics_account_name is defined
+      msg: 'A controller_global_analytics_account_name must be provided'
+    when: enable_analytics_agent | bool
+
+  - name: Validate controller_host_name
+    ansible.builtin.assert:
+      that: controller_host_name is defined
+      msg: 'A controller_host_name must be provided'
+
+  - name: Validate controller_account_name
+    ansible.builtin.assert:
+      that:  controller_account_name is defined
+      msg: 'A controller_account_name must be provided'
+
+  - name: Validate controller_port
+    ansible.builtin.assert:
+      that: controller_port is defined
+      msg: 'A controller_port must be provided'
+
+  - name: Validate analytics_event_endpoint
+    ansible.builtin.assert:
+      that: analytics_event_endpoint is defined
+      msg: 'A analytics_event_endpoint must be provided'
+    when: enable_analytics_agent | bool
+
+  - name: Validate Proxy Host configurations
+    ansible.builtin.assert:
+      that: proxy_host is defined
+      msg: 'A proxy_host is required if enable_proxy is true'
+    when:  enable_proxy | bool
+
+  - name: Validate Proxy Port configurations
+    ansible.builtin.assert:
+      that: proxy_port is defined
+      msg: 'A proxy_port is required if enable_proxy is true'
+    when:  enable_proxy | bool
+
+  - name: Validate Proxy Authentication user configuration
+    ansible.builtin.assert:
+      that: proxy_user is defined
+      msg: 'A proxy_user is required if enable_proxy_authentication is true'
+    when: enable_proxy_authentication | bool
+
+  - name: Validate Proxy Authentication password configuration
+    ansible.builtin.assert:
+      that: proxy_user is defined
+      msg: 'A proxy_password is required if enable_proxy_authentication is true'
+    when: enable_proxy_authentication | bool
+
+  - name: Validate allowed agent backup count
+    ansible.builtin.assert:
+      that: max_agent_backup_count | int == max_agent_backup_count and max_agent_backup_count >= 0
+      msg: 'Value of max_agent_backup_count set to => {{ max_agent_backup_count }}. Set a non negative integer value.'

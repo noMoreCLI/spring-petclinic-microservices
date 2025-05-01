@@ -1,0 +1,138 @@
+- name: Agent rollback
+  become: "{{ run_with_root }}"
+  block:
+    - name: Check if Python Agent backup folder exists
+      ansible.builtin.stat:
+        path: "{{ python_agent_backup_folder }}"
+      register: backup_folder
+
+    - ansible.builtin.fail:
+        msg:
+          - "Failure occurred while doing rollback. As no backup folder found. Aborting Play on this host."
+          - "If your intent was to remove the agent, please use the 'uninstall' task"
+      when: not backup_folder.stat.exists
+
+    - name: Find backed up agent files from backup dir
+      ansible.builtin.find:
+        path: "{{ python_agent_backup_folder }}"
+        patterns: 'agent*'
+      register: agentfiles
+
+    - ansible.builtin.fail:
+        msg:
+          - "Failure occurred while doing rollback. As no backup file is present. Aborting Play on this host."
+          - "If your intent was to remove the agent, please use the 'uninstall' task"
+      when: (agentfiles.files | count == 0)
+
+    - name: Check if agent dir exists
+      ansible.builtin.file:
+        path: "{{ python_agent_dest_folder }}/"
+        state: directory
+        mode: '755'
+      changed_when: false # this ensures this task is idempotent
+
+    - name: Remove Old Agent
+      block:
+        - name: Checking if Python Agent Already installed
+          ansible.builtin.shell: "{{ python_path }} freeze | grep appdynamics"
+          register: old_agent_found
+          ignore_errors: true
+          changed_when: false
+          failed_when: old_agent_found.rc > 1
+
+        - name: Find existing pip module versions
+          ansible.builtin.shell: "{{ python_path }} freeze | sed -n -e '/^appdynamics/p' > {{ python_agent_backup_folder }}/tmp/python-agent-requirements.txt"
+          when: old_agent_found.rc == 0
+          changed_when: false
+
+        - name: Removing old pip packages
+          ansible.builtin.shell: "{{ python_path }}  uninstall -r {{ python_agent_backup_folder }}/tmp/python-agent-requirements.txt -y"
+          when: old_agent_found.rc == 0
+          changed_when: false
+
+        - name: Clean tmp files
+          ansible.builtin.file:
+            path: "{{ python_agent_backup_folder }}/tmp/python-agent-requirements.txt"
+            state: absent
+          when: old_agent_found.rc == 0
+
+    # If present clean destination directory removing all files.
+    - name: Remove all Files and Directory from Agent Destination
+      ansible.builtin.include_tasks: "cleanup-agent.yml"
+
+    - name: Restore python agent from backup
+      ansible.builtin.include_role:
+        name: common
+        tasks_from: agent_from_backup_linux # run common/tasks/agent_from_backup_linux.yaml
+      vars:
+        agent_backup_folder_linux: "{{ python_agent_backup_folder }}"
+        agent_dest_folder_linux: "{{ python_agent_dest_folder }}"
+
+    - name: Move config file to specified destination if custom path
+      ansible.builtin.shell: "mv {{ python_agent_dest_folder }}/{{ config_file_name }}  {{ config_file_path_prefix }}/"
+      changed_when: false
+      when: config_file_path_prefix != python_agent_dest_folder
+
+    - name: Get ownership information
+      ansible.builtin.stat:
+        path: "{{ agent_config_path }}"
+      register: config_ownership_info
+
+    # Changing ownership of files when user is not appdynamics
+    - name: Recursively change ownership of Config file in case of custom path
+      become: true
+      ansible.builtin.file:
+        path: "{{ agent_config_path }}"
+        recurse: true
+        owner: "{{ agent_dir_permission.user }}"
+        group: "{{ agent_dir_permission.group }}"
+      changed_when: false
+      when: config_ownership_info.stat.pw_name != agent_dir_permission.user
+
+    - name: Rollback in case of Appd-Portal
+      ansible.builtin.include_tasks: install-agent-wheel.yml
+      when: install_agent_from == 'appd-portal'
+
+    - name: Rollback in case of PYPI
+      when: install_agent_from == 'pypi'
+      block:
+        - name: Installing python-agent-requirements.txt in default
+          ansible.builtin.pip:
+            requirements: "{{ python_agent_dest_folder }}/python-agent-requirements.txt"
+            executable: pip3
+            extra_args: "-i {{ pypi_index_url }} --no-cache-dir"
+          when: install_env == "default"
+
+        - name: Installing python-agent-requirements.txt in virtualenv
+          ansible.builtin.pip:
+            requirements: "{{ python_agent_dest_folder }}/python-agent-requirements.txt"
+            virtualenv: "{{ virtualenv_path }}"
+            extra_args: "-i {{ pypi_index_url }} --no-cache-dir"
+          when: install_env == "virtualenv"
+
+    - name: Removing tmp requirements file
+      ansible.builtin.file:
+        path: "{{ python_agent_dest_folder }}/python-agent-requirements.txt"
+        state: absent
+
+    - name: Notifying Agent State to Handler
+      ansible.builtin.debug:
+        msg: "Notifying handler for successful Agent rollback"
+      changed_when: true
+      notify: "Verify python agent state"
+      when: (agent_action|lower == rollback_string)
+
+  rescue:
+    - name: Setting error status
+      ansible.builtin.set_fact:
+        error_status: true
+
+    - name: Notifying Agent State to Handler
+      ansible.builtin.debug:
+        msg: "Notifying handler as Exception occurred"
+      changed_when: true
+      notify: "Set Exception Logs"
+
+    - name: Printing to output file as error occurred while doing rollback
+      ansible.builtin.debug:
+        msg: 'Error occurred while doing Agent Rollback halting play on host. Task Failed - {{ ansible_failed_task.name }}'

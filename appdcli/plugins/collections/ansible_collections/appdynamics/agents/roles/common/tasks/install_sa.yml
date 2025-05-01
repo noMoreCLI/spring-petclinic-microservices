@@ -1,0 +1,15 @@
+- become: true
+  when: ansible_os_family in ['RedHat', 'Debian', 'Windows']
+  block:
+    - ansible.builtin.debug:
+        msg: 'installing smart agent version - {{ install_smart_agent }}, {{ smart_agent_artifact_path }}'
+    - ansible.builtin.include_role:
+        name: appdynamics.agents.smartagent
+      vars:
+        # Define Agent Type and Version
+        agent_type: smartagent
+        agent_action: "{{ smart_agent_action | default('install') }}"
+        agent_version: "{{smart_agent_version}}"
+        artifact_path: "{{ smart_agent_artifact_path }}"
+        smartagent_auto_start: "{{ smart_agent_auto_start | default(false) | bool }}"
+        fm_service_port: "{{ smart_agent_port | default(8030) }}"

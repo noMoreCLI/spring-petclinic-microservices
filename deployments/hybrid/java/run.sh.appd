@@ -1,0 +1,8 @@
+#!/bin/bash
+CONFIG_SERVER_URL=http://config-server:8888 \
+java -javaagent:/opt/appdynamics/java-agent/javaagent.jar \
+-jar jar/*.jar \
+--server.port=8082 \
+--spring.profiles.active=hybrid,mysql \
+--logging.file.path=./logs \
+--logging.file.name=./logs/spring.log

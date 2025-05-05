@@ -41,6 +41,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
+import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonObject;
+import javax.json.JsonReader;
+import java.io.StringReader;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -69,6 +75,9 @@ class VisitResource {
 
     @Value("${customers-service.endpoint.baseUrl}")
     private String baseUrl;
+
+    @Value("${notification-service.endpoint.baseUrl}")
+    private String notificationBaseUrl;
 
     @PostMapping("owners/{ownerId}/pets/{petId}/visits")
     @ResponseStatus(HttpStatus.CREATED)
@@ -108,6 +117,27 @@ class VisitResource {
         log.info("Creating visit for {} with {}",logPrettyJson(customerInfo),logPrettyJson(petInfo));
         visit.setPetId(petId);
         log.info("Saving visit {}", visit);
+        log.info("Sending notification to SMS service");
+        try {
+            JsonReader customerInfoJsonReader = Json.createReader(new StringReader(customerInfo));
+            JsonReader petInfoJsonReader = Json.createReader(new StringReader(petInfo));
+            JsonObject customerInfoJson = customerInfoJsonReader.readObject();
+            JsonObject petInfoJson = petInfoJsonReader.readObject();
+            customerInfoJsonReader.close();
+            petInfoJsonReader.close();
+            String notificationQuery = "?phone=" + customerInfoJson.getString("telephone") +
+                "&pet=" + petInfoJson.getString("name") +
+                "&name=" + customerInfoJson.getString("firstName");
+            log.info("Notification payload: {}", notificationQuery);
+            client.get()
+                .uri(notificationBaseUrl+"/notification"+notificationQuery)
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+            log.info("Notification sent successfully");
+        } catch (Exception e) {
+            log.error("Error sending notification", e);
+        }
         return visitRepository.save(visit);
     }
 

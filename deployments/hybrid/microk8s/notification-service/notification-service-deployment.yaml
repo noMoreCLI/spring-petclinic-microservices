@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose -f docker-compose.yml convert
+    kompose.version: 1.35.0 (HEAD)
+  labels:
+    io.kompose.service: notification-service
+  name: notification-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: notification-service
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose -f docker-compose.yml convert
+        kompose.version: 1.35.0 (HEAD)
+      labels:
+        io.kompose.service: notification-service
+    spec:
+      containers:
+        - image: astoklas177/spring-petclinic-notification-service:latest
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: k8s
+          livenessProbe:
+            exec:
+              command:
+                - curl
+                - -I
+                - http://localhost:8089
+            failureThreshold: 10
+            periodSeconds: 10
+            timeoutSeconds: 15
+          name: notification-service
+          ports:
+            - containerPort: 8089
+              protocol: TCP
+          resources:
+            limits:
+              memory: "536870912"
+      restartPolicy: Always

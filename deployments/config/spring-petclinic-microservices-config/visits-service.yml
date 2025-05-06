@@ -56,3 +56,6 @@ eureka:
 customers-service:
   endpoint:
     baseUrl: "http://customers-service:8081"
+notification-service:
+  endpoint:
+    baseUrl: "http://notification-service:8089"

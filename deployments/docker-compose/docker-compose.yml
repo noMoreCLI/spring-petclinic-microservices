@@ -14,9 +14,9 @@ services:
     ports:
      - 8888:8888
     environment:   
-      - JAVA_OPTIONS="$JAVA_OPTIONS -Dspring.profiles.active=native -DGIT_REPO=/projects/spring-petclinic-microservices-config"
       - SPRING_PROFILES_ACTIVE=native
       - GIT_REPO=/projects/spring-petclinic-microservices-config
+      - SERVER_PORT=8888
     volumes:
       - type: bind
         source: ../config/spring-petclinic-microservices-config/
@@ -41,6 +41,7 @@ services:
      - 8761:8761
     environment:   
       - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=8761
 
   customers-service: 
     image: astoklas177/spring-petclinic-customers-service:latest

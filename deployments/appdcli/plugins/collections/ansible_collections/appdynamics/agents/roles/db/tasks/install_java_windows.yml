@@ -1,8 +1,0 @@
----
-- name: Install roles from requirements.yml
-  delegate_to: localhost
-  ansible.builtin.command: "ansible-galaxy install lean_delivery.java"
-  changed_when: false
-
-- ansible.builtin.include_role:
-    name: lean_delivery.java

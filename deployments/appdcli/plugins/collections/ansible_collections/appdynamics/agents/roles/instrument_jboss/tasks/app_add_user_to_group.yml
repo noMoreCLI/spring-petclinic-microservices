@@ -1,7 +1,0 @@
-- name: Add app_user to appdynamics_group group
-  become: yes
-  ansible.builtin.user:
-    name: "{{ app_user }}"
-    groups:
-      - "{{ appdynamics_group }}"
-    append: yes

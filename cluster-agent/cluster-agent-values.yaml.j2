@@ -19,6 +19,7 @@ clusterAgent:
 
 instrumentationConfig:
   enabled: true
+  enabledForceReInstrumentation: true
   instrumentationMethod: Env
   nsToInstrumentRegex: "{{ namespace_to_instrument }}"
   defaultAppName: "{{ app_name }}"

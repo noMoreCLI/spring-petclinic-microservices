@@ -28,7 +28,7 @@ spec:
               value: /projects/spring-petclinic-microservices-config
             - name: SPRING_PROFILES_ACTIVE
               value: native
-          image: astoklas177/spring-petclinic-config-server
+          image: astoklas177/spring-petclinic-config-server:latest
           livenessProbe:
             exec:
               command:

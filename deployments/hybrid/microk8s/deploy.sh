@@ -6,6 +6,7 @@
 if kubectl get namespace "$NAMESPACE" >/dev/null 2>&1; then
     echo "Namespace '$NAMESPACE' already exists. Delete existing resources"
     kubectl -n $NAMESPACE delete configmap petclinic-repo
+    kubectl -n $NAMESPACE delete configmap agent-cm
 else
     echo "Namespace '$NAMESPACE' does not exist. Creating..."
     kubectl create namespace "$NAMESPACE"
@@ -24,7 +25,5 @@ echo "Waiting for db and configserver"
 kubectl -n $NAMESPACE wait --for=condition=available --timeout=600s deployment/config-server
 # starting the rest - the already started will be ignored as not changed
 
-
 kubectl -n $NAMESPACE apply -f deployments/
-
 kubectl -n notification apply -f notification-service/

@@ -20,7 +20,7 @@ usermod -aG sudo ${USER_NAME}
 
 echo "Updateing System"
 apt update && apt upgrade -y
-apt install -y retry snapd git wget curl mysql-client ca-certificates
+apt install -y retry snapd git wget curl mysql-client ca-certificates openjdk-17-jdk
 
 echo "198.18.134.22    ansible" >> /etc/hosts
 echo "198.18.134.25    petclinic-db" >> /etc/hosts

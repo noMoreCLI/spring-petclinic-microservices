@@ -1,5 +1,20 @@
 # To install Cluster Agent 
 installClusterAgent: true
+installInfraViz: true
+
+
+infraViz:
+  nodeOS: "linux"
+  enableMasters: false
+  stdoutLogging: false
+  enableContainerHostId: true
+  enableServerViz: true
+  enableDockerViz: false
+
+
+netViz: 
+  enabled: true 
+  netVizPort: 3892
 
 # AppDynamics controller info
 controllerInfo:
@@ -17,7 +32,7 @@ clusterAgent:
 
 instrumentationConfig:
   enabled: true
-  enabledForceReInstrumentation: true
+  enableForceReInstrumentation: true
   instrumentationMethod: Env
   nsToInstrumentRegex: "{{ namespace_to_instrument }}"
   defaultAppName: "{{ app_name }}"

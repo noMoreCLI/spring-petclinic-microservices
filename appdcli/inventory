@@ -1,6 +1,19 @@
+[all:vars]
+ansible_user=cisco
+ansible_ssh_pass=C1sco12345
+ansible_become_pass=C1sco12345
+ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+ansible_python_interpreter=/usr/bin/python3
+
 [microk8s]
-198.18.134.23 ansible_user=cisco ansible_ssh_pass=C1sco12345 ansible_become_pass=C1sco12345 ansible_ssh_common_args='-o StrictHostKeyChecking=no' ansible_python_interpreter=/usr/bin/python3
+198.18.134.23
+
 [petclinic-db]
-198.18.134.25 ansible_user=cisco ansible_ssh_pass=C1sco12345 ansible_become_pass=C1sco12345 ansible_ssh_common_args='-o StrictHostKeyChecking=no' ansible_python_interpreter=/usr/bin/python3
+198.18.134.25
+
 [visits-service]
-198.18.134.24 ansible_user=cisco ansible_ssh_pass=C1sco12345 ansible_become_pass=C1sco12345 ansible_ssh_common_args='-o StrictHostKeyChecking=no' ansible_python_interpreter=/usr/bin/python3
+198.18.134.24
+
+[machineagent:children]
+petclinic-db
+visits-service

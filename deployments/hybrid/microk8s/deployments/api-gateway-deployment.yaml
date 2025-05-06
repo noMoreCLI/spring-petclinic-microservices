@@ -43,5 +43,14 @@ spec:
           resources:
             limits:
               memory: "536870912"
+          volumeMounts:
+            - name: agentconfig
+              mountPath: /application/BOOT-INF/classes/static/scripts/
+              subPath: agent.js
+              readOnly: false
+              optional: true
       restartPolicy: Always
-
+      volumes:
+          - name: agentconfig
+            configMap:
+              name: agent-cm

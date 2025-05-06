@@ -45,10 +45,9 @@ spec:
               memory: "536870912"
           volumeMounts:
             - name: agentconfig
-              mountPath: /application/BOOT-INF/classes/static/scripts/
+              mountPath: /application/BOOT-INF/classes/static/scripts/agent.js
               subPath: agent.js
               readOnly: false
-              optional: true
       restartPolicy: Always
       volumes:
           - name: agentconfig

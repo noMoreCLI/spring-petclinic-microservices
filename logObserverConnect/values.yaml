@@ -21,7 +21,7 @@ extraAttributes:
       tag_name: appd_tier_name
 splunkPlatform:
   endpoint: http://192.168.0.219:8088
-  token: bf977d1c-262d-449d-a5d5-60db4b8cf11e
+  token: <token>
   index: k8s_test_logs
   logsEnabled: true
   metricsEnabled: true

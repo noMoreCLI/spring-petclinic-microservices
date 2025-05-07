@@ -49,8 +49,16 @@ spec:
             - name: petclinic-repo
               mountPath: /projects/spring-petclinic-microservices-config
               readOnly: true
+            - name: logbackconfig
+              mountPath: /application/BOOT-INF/classes/logback-spring.xml
+              subPath: logback-spring.xml
+              readOnly: false
       restartPolicy: Always
       volumes:
           - name: petclinic-repo
             configMap:
               name: petclinic-repo
+          - name: logbackconfig
+            configMap:
+              name: logback-spring-cm
+

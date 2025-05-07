@@ -1,0 +1,28 @@
+agent:
+  discovery:
+    enabled: true
+certmanager:
+  enabled: true
+clusterName: clus-2
+environment: clus-2
+gateway:
+  enabled: false
+operator:
+  enabled: true
+operatorcrds:
+  install: true
+extraAttributes:
+  custom:
+    - name: "appd_app_name"
+      value: "Petclinic-2"
+  fromLabels:
+    - key: io.kompose.service
+      from: pod
+      tag_name: appd_tier_name
+splunkPlatform:
+  endpoint: http://192.168.0.219:8088
+  token: bf977d1c-262d-449d-a5d5-60db4b8cf11e
+  index: k8s_test_logs
+  logsEnabled: true
+  metricsEnabled: true
+  metricsIndex: k8s_test_metrics

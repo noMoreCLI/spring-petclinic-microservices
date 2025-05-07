@@ -5,51 +5,58 @@ metadata:
     kompose.cmd: kompose -f docker-compose.yml convert
     kompose.version: 1.35.0 (HEAD)
   labels:
-    io.kompose.service: customers-service
-  name: customers-service
+    io.kompose.service: api-gateway
+  name: api-gateway
 spec:
   replicas: 1
   selector:
     matchLabels:
-      io.kompose.service: customers-service
+      io.kompose.service: api-gateway
   template:
     metadata:
       annotations:
         kompose.cmd: kompose -f docker-compose.yml convert
         kompose.version: 1.35.0 (HEAD)
       labels:
-        io.kompose.service: customers-service
+        io.kompose.service: api-gateway
     spec:
       containers:
-        - env:
-            - name: SPRING_PROFILES_ACTIVE
-              value: k8s,mysql
+        - image: astoklas177/spring-petclinic-api-gateway:latest
           command:
             - /entrypoint.sh
-          image: astoklas177/spring-petclinic-customers-service:latest
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: k8s
           livenessProbe:
             exec:
               command:
                 - curl
                 - -I
-                - http://localhost:8081
+                - http://api-gateway:8080
             failureThreshold: 10
             periodSeconds: 10
             timeoutSeconds: 15
-          name: customers-service
+          name: api-gateway
           ports:
-            - containerPort: 8081
+            - containerPort: 8080
               protocol: TCP
           resources:
             limits:
               memory: "536870912"
           volumeMounts:
+            - name: agentconfig
+              mountPath: /application/BOOT-INF/classes/static/scripts/agent.js
+              subPath: agent.js
+              readOnly: false
             - name: logbackconfig
               mountPath: /application/BOOT-INF/classes/logback-spring.xml
               subPath: logback-spring.xml
               readOnly: false
       restartPolicy: Always
       volumes:
+          - name: agentconfig
+            configMap:
+              name: agent-cm
           - name: logbackconfig
             configMap:
               name: logback-spring-cm

@@ -47,4 +47,13 @@ spec:
           resources:
             limits:
               memory: "536870912"
+          volumeMounts:
+            - name: logbackconfig
+              mountPath: /application/BOOT-INF/classes/logback-spring.xml
+              subPath: logback-spring.xml
+              readOnly: false
       restartPolicy: Always
+      volumes:
+          - name: logbackconfig
+            configMap:
+              name: logback-spring-cm

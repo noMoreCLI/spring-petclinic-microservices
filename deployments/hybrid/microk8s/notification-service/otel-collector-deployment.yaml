@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+    spec:
+      containers:
+      - name: otel-collector
+        image: otel/opentelemetry-collector-contrib:0.113.0  # Use the contrib version
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        args:
+        - "--config=/conf/config.yaml"
+        volumeMounts:
+        - name: config-volume
+          mountPath: /conf
+          readOnly: true
+      volumes:
+      - name: config-volume
+        configMap:
+          name: otel-collector-config

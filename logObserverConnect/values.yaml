@@ -3,8 +3,8 @@ agent:
     enabled: true
 certmanager:
   enabled: true
-clusterName: clus-2
-environment: clus-2
+clusterName: clus-xxx
+environment: clus-xxx
 gateway:
   enabled: false
 operator:
@@ -14,14 +14,14 @@ operatorcrds:
 extraAttributes:
   custom:
     - name: "appd_app_name"
-      value: "Petclinic-2"
+      value: "Petclinic-xxx"
   fromLabels:
     - key: io.kompose.service
       from: pod
       tag_name: appd_tier_name
 splunkPlatform:
-  endpoint: http://192.168.0.219:8088
-  token: <token>
+  endpoint: <HEC Endpoint>
+  token: <HEC Token>
   index: k8s_test_logs
   logsEnabled: true
   metricsEnabled: true

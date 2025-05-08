@@ -22,7 +22,7 @@ echo "Adding hosts entries"
 echo "198.18.134.22    ansible" >> /etc/hosts
 echo "198.18.134.25    petclinic-db" >> /etc/hosts
 echo "198.18.134.25    petclinic-db" >> /etc/hosts
-echo "198.18.134.23    config-server discovery-server customers-service vets-service admin-service genai-service api-gateway notification-service" >> /etc/hosts
+echo "198.18.134.23    config-server discovery-server customers-service vets-service admin-service genai-service api-gateway notification-service collector" >> /etc/hosts
 
 echo "Updateing System"
 apt update && apt upgrade -y

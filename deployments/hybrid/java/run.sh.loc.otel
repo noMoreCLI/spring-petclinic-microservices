@@ -1,0 +1,9 @@
+#!/bin/bash
+CONFIG_SERVER_URL=http://config-server:8888 java \
+       	-Dlogging.config=file:logback.xml \
+       	-Dappdynamics.async.instrumentation.strategy=executor \
+       	-Dappdynamics.opentelemetry.enabled=true \
+        -Dotel.resource.attributes="service.name=visits-service,service.namespace=Petclinic-2" \
+        -Dotel.exporter.otlp.traces.endpoint=http://collector:4317 \
+        -Dlogback.configurationFile=./logback.xml  \
+        -jar jar/*.jar  --server.port=8082 --spring.profiles.active=hybrid,mysql 

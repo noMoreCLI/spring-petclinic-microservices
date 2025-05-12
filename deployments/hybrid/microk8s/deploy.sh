@@ -16,7 +16,7 @@ fi
 
 #Create ConfigMaps for DB and config-server
 kubectl -n $NAMESPACE create configmap petclinic-repo --from-file=../../config/spring-petclinic-microservices-config
-
+kubectl -n $NAMESPACE apply -f deployments/logback-spring-cm.yaml
 
 kubectl -n $NAMESPACE apply -f deployments/config-server-deployment.yaml
 kubectl -n $NAMESPACE apply -f deployments/config-server-service.yaml

@@ -40,9 +40,6 @@ spec:
           ports:
             - containerPort: 9090
               protocol: TCP
-          resources:
-            limits:
-              memory: "536870912"
           volumeMounts:
             - name: logbackconfig
               mountPath: /application/BOOT-INF/classes/logback-spring.xml

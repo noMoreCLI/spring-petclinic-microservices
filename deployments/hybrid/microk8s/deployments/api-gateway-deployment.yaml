@@ -40,9 +40,6 @@ spec:
           ports:
             - containerPort: 8080
               protocol: TCP
-          resources:
-            limits:
-              memory: "536870912"
           volumeMounts:
             - name: agentconfig
               mountPath: /application/BOOT-INF/classes/static/scripts/agent.js

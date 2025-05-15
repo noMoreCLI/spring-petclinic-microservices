@@ -67,7 +67,7 @@ USER_NAME="${USER_NAME:-cisco}"
 USER_PASSWORD="${USER_PASSWORD:-REVOKED_SSH_PASSWORD}"
 ROOT_PASSWORD="${ROOT_PASSWORD:-REVOKED_SSH_PASSWORD}"
 echo "Setting Hostname"
-hostnamectl set-hostname visits-service
+hostnamectl set-hostname visits-service-${STUDENT_ID}
 
 echo "Setting Password for root"
 echo "root:${ROOT_PASSWORD}" | chpasswd

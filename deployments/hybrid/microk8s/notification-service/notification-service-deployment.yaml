@@ -25,6 +25,8 @@ spec:
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: k8s
+            - name: SERVICE_NAME 
+              value: notification-service
           livenessProbe:
             exec:
               command:
@@ -38,7 +40,4 @@ spec:
           ports:
             - containerPort: 8089
               protocol: TCP
-          resources:
-            limits:
-              memory: "536870912"
       restartPolicy: Always

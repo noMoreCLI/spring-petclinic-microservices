@@ -15,9 +15,9 @@ spec:
   java:
     env:
     - name: OTEL_RESOURCE_ATTRIBUTES
-      value: deployment.environment=$(NAMESPACE),service.name="notification-service:8089",splunk.zc.method=splunk-otel-java:v2.7.0
+      value: service.name="$(SERVICE_NAME)",splunk.zc.method=splunk-otel-java:v2.7.0
     - name: OTEL_EXPORTER_OTLP_ENDPOINT
-      value: http://otel-collector:4318
+      value: http://otel-collector:4317
     #image: ghcr.io/open-telemetry/opentelemetry-operator/autoinstrumentation-java:1.29.0
     image: ghcr.io/signalfx/splunk-otel-java/splunk-otel-java:v2.7.0
     resources:

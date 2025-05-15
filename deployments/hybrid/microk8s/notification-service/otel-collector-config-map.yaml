@@ -29,14 +29,13 @@ data:
           value: 443
         - key: service.name
           value: notification-service
-          action: upsert
+          action: insert
         - key: service.namespace
-          value: Petclinic-2
+          value: Petclinic-X
           action: upsert
       batch:
         timeout: 30s
         send_batch_size: 90
-
     exporters:
       debug:
         verbosity: detailed
@@ -54,7 +53,6 @@ data:
     extensions:
       zpages:
         endpoint: ${env:POD_IP}:56888
-
     service:
       extensions: [zpages]
       pipelines:
@@ -65,4 +63,4 @@ data:
         logs:
           receivers: [otlp]
           processors: [resource, batch]
-          exporters: [otlp] 
+          exporters: [otlp]

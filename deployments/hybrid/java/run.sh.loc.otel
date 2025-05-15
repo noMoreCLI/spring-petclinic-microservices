@@ -1,9 +1,15 @@
 #!/bin/bash
 CONFIG_SERVER_URL=http://config-server:8888 java \
-       	-Dlogging.config=file:logback.xml \
        	-Dappdynamics.async.instrumentation.strategy=executor \
+       	-Dlogging.config=file:logback.xml \
+        -Dlogback.configurationFile=./logback.xml  \
        	-Dappdynamics.opentelemetry.enabled=true \
+	    -Dagent.deployment.mode=hybrid \
+        -Dotel.traces.exporter=otlp \
+	    -Dotel.metrics.exporter=otlp \
         -Dotel.resource.attributes="service.name=visits-service,service.namespace=Petclinic-2" \
         -Dotel.exporter.otlp.traces.endpoint=http://collector:4317 \
-        -Dlogback.configurationFile=./logback.xml  \
+		-Dotel.exporter.otlp.metrics.endpoint=http://collector:4317 \
         -jar jar/*.jar  --server.port=8082 --spring.profiles.active=hybrid,mysql 
+
+

@@ -27,3 +27,14 @@ kubectl -n $NAMESPACE wait --for=condition=available --timeout=600s deployment/c
 
 kubectl -n $NAMESPACE apply -f deployments/
 kubectl -n notification apply -f notification-service/
+
+# creating the external services
+kubectl expose service "visits-service-${STUDENT_ID}" \
+  --type=ExternalName \
+  --external-name=e198.18.134.24.nip.io
+kubectl expose service "petclinic-db" \
+  --type=ExternalName \
+  --external-name=198.18.134.25.nip.io
+kubectl expose service "petclinic-db-${STUDENT_ID}" \
+  --type=ExternalName \
+  --external-name=198.18.134.25.nip.io

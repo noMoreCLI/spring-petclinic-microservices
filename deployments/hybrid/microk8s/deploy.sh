@@ -29,9 +29,9 @@ kubectl -n $NAMESPACE apply -f deployments/
 kubectl -n notification apply -f notification-service/
 
 # creating the external services
-kubectl create svc externalname "visits-service-${STUDENT_ID}" \
+kubectl -n $NAMESPACE create svc externalname "visits-service-${STUDENT_ID}" \
   --external-name="198.18.134.24.nip.io"
-kubectl create svc externalname "petclinic-db" \
+kubectl -n $NAMESPACE create svc externalname "petclinic-db" \
   --external-name="198.18.134.25.nip.io"
-kubectl create svc externalname "petclinic-db-$STUDENT_ID" \
+kubectl -n $NAMESPACE create svc externalname "petclinic-db-$STUDENT_ID" \
   --external-name="198.18.134.25.nip.io"

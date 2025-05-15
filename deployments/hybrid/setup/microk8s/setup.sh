@@ -84,7 +84,8 @@ apt install -y retry snapd git wget curl
 
 cp /etc/hosts /etc/hosts.bak
 rm /etc/hosts
-echo "Adding hosts entries" >> /etc/hosts
+echo "Adding hosts entries"
+echo "127.0.0.1 localhost localhost.localdomain"  >> /etc/hosts
 echo "::1     ip6-localhost ip6-loopback" >> /etc/hosts
 echo " fe00::0 ip6-localnet" >> /etc/hosts
 echo "ff00::0 ip6-mcastprefix" >> /etc/hosts
@@ -93,7 +94,7 @@ echo "ff02::2 ip6-allrouters" >> /etc/hosts
 echo "198.18.134.22    ansible-${STUDENT_ID}" >> /etc/hosts
 echo "198.18.134.25    petclinic-db petclinic-db-${STUDENT_ID}" >> /etc/hosts
 echo "198.18.134.24    visits-service-${STUDENT_ID}" >> /etc/hosts
-echo "198.18.134.23    config-server discovery-server customers-service vets-service admin-service genai-service api-gateway" >> /etc/hosts
+echo "198.18.134.23    microk8s microk8s-${STUDENT_ID} config-server discovery-server customers-service vets-service admin-service genai-service api-gateway" >> /etc/hosts
 
 echo "Installing MicroK8s"
 retry snap install microk8s --classic --channel=1.32/stable

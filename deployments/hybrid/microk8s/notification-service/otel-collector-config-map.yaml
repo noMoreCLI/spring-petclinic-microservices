@@ -36,6 +36,13 @@ data:
       batch:
         timeout: 30s
         send_batch_size: 90
+      transform:
+        trace_statements:
+          - context: span
+            conditions:
+              - kind == SPAN_KIND_CLIENT
+            statements:
+              - set(attributes["net.peer.name"], "customers-service") where name == "http:customers-service_8081"
     exporters:
       debug:
         verbosity: detailed
@@ -58,7 +65,7 @@ data:
       pipelines:
         traces/fso:
           receivers: [otlp]
-          processors: [resource, batch]
+          processors: [transform, resource, batch]
           exporters: [otlphttp, debug]      
         logs:
           receivers: [otlp]

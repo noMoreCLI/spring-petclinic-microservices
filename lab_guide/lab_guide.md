@@ -1,4 +1,4 @@
-# Lab Guide - LTROBS-2005 - AppDynamics Hybrid Agent - Where AppDynamics Agents and OpenTelemetry Meet
+Lab Guide - LTROBS-2005 - AppDynamics Hybrid Agent - Where AppDynamics Agents and OpenTelemetry Meet
 
 ## Intro
 

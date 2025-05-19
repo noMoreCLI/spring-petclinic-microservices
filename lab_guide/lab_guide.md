@@ -142,7 +142,7 @@ It is important to start up the application components in the right order. There
     kubectl get pods -A
     ```
     ![kubectl get pods -A output](img/image002.png)
-    *Image 2: kubectl get pods -A output*
+    *Image 2: `kubectl get pods -A` output*
 
     All pods should be in a running state. If they are not, either delete the pod or ask for help.
 

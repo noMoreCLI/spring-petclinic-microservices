@@ -583,7 +583,7 @@ However, in our environment, the automatic linking was successful because the ho
 
 -----
 
-## Installing Browser Real User Monitoring (BRUM) 🕵️‍♀️
+## Installing Browser Real User Monitoring (BRUM)
 
 Browser Real User Monitoring (BRUM) also requires an agent. This agent, in the form of a JavaScript configuration and a JavaScript file, needs to be added to the webpages serving the application. For Petclinic, this is the **API-GATEWAY** service. We've already prepared the deployments for you to easily add the agent in the right place.
 

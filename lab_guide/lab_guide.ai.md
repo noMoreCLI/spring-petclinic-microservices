@@ -1,4 +1,4 @@
-# Lab Guide - LTROBS-2005 - AppDynamics Hybrid Agent - Where AppDynamics Agents and OpenTelemetry Meet
+# Lab Guide - LTROBS-2005 - Splunk AppDynamcis: Hands-on with Observability for hybrid applications - SmartAgent, Kubernetes, OpenTelemetry and more
 
 <!-- 
 ============================================================================
@@ -221,10 +221,12 @@ It is important to start up the application components in the right order. There
    
    The database comes with schema, sample data, users and everything else needed for the lab.
 
-5. For debugging purposes, you can connect to the MySQL DB from the DB server using:
-   ```bash
-   mysql -u root -P 3306 --protocol=tcp -h localhost -p petclinic
-   ```
+   > [!TIP]
+   > For debugging purposes, you can connect to the MySQL DB from the DB  
+   > server using:
+   >   ```bash
+   >   mysql -u root -P 3306 --protocol=tcp -h localhost -p petclinic
+   >   ```
 
 ### Starting Services in Kubernetes
 

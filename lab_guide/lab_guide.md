@@ -1,4 +1,4 @@
-# Lab Guide - LTROBS-2005 - Splunk AppDynamcis: Hands-on with Observability for hybrid applications - SmartAgent, Kubernetes, OpenTelemetry and more
+# Lab Guide - LTROBS-2005 - Splunk AppDynamics: Hands-on with Observability for hybrid applications - SmartAgent, Kubernetes, OpenTelemetry and more
 
 <!-- 
 ============================================================================
@@ -28,6 +28,7 @@
    - [Smart Agent Installation](#use-smartagentcli-for-agent-installation)
    - [Java Agent Installation](#installing-java-agent-using-appd-gui)
    - [Database Agent Installation](#installing-db-using-appd-gui)
+   - [Bulk Upgrading Machine Agents](#bulk-upgrading-agents-using-the-splunk-appdynamics-agent-management-interface)
 6. [Configuring Monitoring](#configuring-monitoring)
    - [Browser Real User Monitoring](#installing-browser-real-user-monitoring-brum)
    - [Log Observer Connect](#log-observer-connect)
@@ -495,6 +496,56 @@ Run this from the microk8s host as the ansible host does not have `kubectl` inst
 * Validate application has some items in flow map topology. It will not be the full map because we have yet to instrument the `visits-service-x` node. 
 
 ---
+## Bulk Upgrading Machine Agents using the Splunk Appdynamics Agent Management Interface
+
+### Objective
+In this section of the lab we are going to be upgrade our machine agent on the hosts `visits-service-x` and `petclinic-db-x`. In order to do this we are going to make use of the Upgrade feature built-in to the Appdynamics GUI. This makes upgrades incredibily easy to make, with just a few clicks can kick off AppD agent upgrades. 
+
+### Prerequisites
+* Access to AppDynamics Controller
+* Successfully ran the `./bulk-install-ma.sh` script from the previous section
+* SmartAgent already installed on the target host (`visits-service-x` and `petclinic-db-x`)
+
+### Step 1: Navigate to Agent Management
+
+![AppD Home - Agent Management Tab](img/image005.png)
+*Image 5: AppDynamics Home Screen with Agent Management tab highlighted.*
+
+![Agent Management - Manage Agents Button](img/image006.png)
+*Image 6: Agent Management screen with Manage Agents button highlighted.*
+
+From the AppDynamics Overview Page, locate and click on the **Agent Management** tab in the top navigation bar. Then click the **Manage Agents** button. Be sure to sort by SmartAgent ID and look for your hosts `visits-service-x` and `petclinic-db-x`.
+
+### Step 2: Begin Machine Agent Upgrade
+
+![Agent Management - Highlighting Hosts to upgrade](img/image079.png)
+*Image 79: Agent Management screen with `visits-service-x` and `petclinic-db-x` highlighted. Waiting to be upgraded.*
+
+1. To preform a bulk upgrade using the Appdynamics GUI, click the check box for your the respective hosts `visits-service-x` and `petclinic-db-x`. 
+
+2. This will allow the Upgrade button to be selected. Go ahead and click to start the upgrade wizard.
+
+![Agent Management - Starting Upgrade Wizard](img/image080.png)
+*Image 80: Agent Management screen with `visits-service-x` and `petclinic-db-x` highlighted. Waiting to be upgraded.*
+
+### Step 3: Click through the Wizard
+![Agent Management - Upgrade Wizard Step 1](img/image081.png)
+*Image 81: Upgrade Wizard - First step showing selected hosts and upgrade options*
+
+![Agent Management - Upgrade Wizard Step 2](img/image082.png)
+*Image 82: Upgrade Wizard - Second step showing upgrade configuration details*
+
+
+### Step 4: Complete the Upgrade Process:
+   * Review the summary screen that shows the selected hosts and agent type
+   * Click "Next" to proceed with the upgrade
+   * The system will automatically handle the upgrade process
+   * You can monitor the progress in the "Tasks in Progress" section
+   * Once complete, verify the new agent version in the Agent Management screen and the History Tab
+![Agent Management - Upgrade Wizard Task Progress](img/image083.png)
+*Image 83: Upgrade Wizard - Task Progress tab showing upgrade status*
+
+---
 
 ## Installing Java Agent Using Appd GUI
 
@@ -854,7 +905,7 @@ In this lab, we will modify the WebApplication directly.
     ```
 
 ![Install Agent - Summary](img/image032.png)
-*Image 32: Editting the configuration map using Kubernetes built-in editor which is just `vi`.*
+*Image 32: Editing the configuration map using Kubernetes built-in editor which is just `vi`.*
 
 5.  From your saved agent configuration, copy everything from `window[.....` to `{})));`.
     We don't need any of the `<script>` tags as we're not embedding this in the HTML page but in a JavaScript file loaded in the webpage.
@@ -958,7 +1009,7 @@ AppDynamics provides default health rules based on the entity type (e.g., applic
 
     * For example, create a Health Rule alerting on an error BT to notify you if the error rate goes higher than 5 errors per minute at a **Warning** Level and **Critical** if it goes above 6 errors per minute.
 ![Install Agent - Summary](img/image041.png)
-*Image 41: Selecting the appriate `Critical` and `Warning` settings for the BT*    
+*Image 41: Selecting the appropriate `Critical` and `Warning` settings for the BT*    
     * You can configure the critical condition first, then use the **Copy From Critical Criteria** button for the warning condition and adjust the values.
 
 
@@ -967,7 +1018,7 @@ AppDynamics provides default health rules based on the entity type (e.g., applic
 *Image 42: Showing a successfully created health rule after the wizard is completed.*  
 8.  Since the health rule is configured to alert based on data being sent into the system, after some time and if the conditions are met, you will see an alert on the BT.
 ![Install Agent - Summary](img/image043.png)
-*Image 43: Highlighting where the Health Rule alert will appear withinth the Appdynamics GUI*  
+*Image 43: Highlighting where the Health Rule alert will appear within the Appdynamics GUI*  
 ![Install Agent - Summary](img/image044.png)
 *Image 44: Highlighting the Health Rule Alerting showing our custom Health Rule*
 

@@ -212,17 +212,19 @@ It is important to start up the application components in the right order. There
    docker-compose up -d
    ```
 
-4. To see the logs, you can issue the command:
-   ```bash
-   docker-compose logs
-   ```
-   
-   The MySQL port is exposed to the host using port 3306. If you want to see the DB initialization, you can find the SQL scripts applied on container start here: `~/spring-petclinic-microservices/deployments/config/db`.
-   
-   The database comes with schema, sample data, users and everything else needed for the lab.
+
 
 
 > [!TIP]
+> To see the logs, you can issue the command:
+>   ```bash
+>   docker-compose logs
+>   ```
+>   
+>   The MySQL port is exposed to the host using port 3306. If you want to see the DB initialization, you can find the SQL scripts applied on  container start here: `~/spring-petclinic-microservices/deployments/config/db`.
+>   
+>   The database comes with schema, sample data, users and everything else needed for the lab.>
+>
 > For debugging purposes, you can connect to the MySQL DB from the DB  
 > server using:
 >   ```bash

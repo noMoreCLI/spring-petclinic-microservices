@@ -28,7 +28,7 @@
    - [Smart Agent Installation](#use-smartagentcli-for-agent-installation)
    - [Java Agent Installation](#installing-java-agent-using-appd-gui)
    - [Database Agent Installation](#installing-db-using-appd-gui)
-   - [Bulk Upgrading Machine Agents](#bulk-upgrading-agents-using-the-splunk-appdynamics-agent-management-interface)
+   - [Bulk Upgrading Machine Agents](#bulk-upgrading-machine-agents)
 6. [Configuring Monitoring](#configuring-monitoring)
    - [Browser Real User Monitoring](#installing-browser-real-user-monitoring-brum)
    - [Log Observer Connect](#log-observer-connect)
@@ -36,7 +36,7 @@
    - [Business Transactions](#business-transaction-detection--refinement)
 7. [Advanced Configuration](#advanced-configuration)
    - [OpenTelemetry Integration](#adding-opentelemetry)
-   - [Backend Detection](#backend-detection-rules)
+   - [Backend Detection Rules](#backend-detection-rules)
 8. [Lab Guide Summary](#lab-guide-summary)
    - [What You've Accomplished](#what-youve-accomplished)
    - [Key Takeaways](#key-takeaways)
@@ -496,7 +496,7 @@ Run this from the microk8s host as the ansible host does not have `kubectl` inst
 * Validate application has some items in flow map topology. It will not be the full map because we have yet to instrument the `visits-service-x` node. 
 
 ---
-## Bulk Upgrading Machine Agents using the Splunk Appdynamics Agent Management Interface
+## Bulk Upgrading Machine Agents 
 
 ### Objective
 In this section of the lab we are going to be upgrade our machine agent on the hosts `visits-service-x` and `petclinic-db-x`. In order to do this we are going to make use of the Upgrade feature built-in to the Appdynamics GUI. This makes upgrades incredibily easy to make, with just a few clicks can kick off AppD agent upgrades. 

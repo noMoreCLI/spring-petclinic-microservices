@@ -36,7 +36,12 @@
 7. [Advanced Configuration](#advanced-configuration)
    - [OpenTelemetry Integration](#adding-opentelemetry)
    - [Backend Detection](#backend-detection-rules)
-8. [Troubleshooting](#troubleshooting)
+8. [Lab Guide Summary](#lab-guide-summary)
+   - [What You've Accomplished](#what-youve-accomplished)
+   - [Key Takeaways](#key-takeaways)
+   - [Real-World Application](#real-world-application)
+   - [Next Steps](#next-steps)
+   - [Resources for Further Learning](#resources-for-further-learning)
 
 <!-- 
 ============================================================================
@@ -403,7 +408,7 @@ AppDynamics provides pre-written Ansible playbooks in the form a linux binary fo
 SmartAgentCLI in this lab will install:
 
 * Smart Agent on all three nodes.
-    * **NOTE:** We don’t need SmartAgent on the MicroK8s node but we are installing it to show bulk installations on 3 nodes as part of this lab.
+    * **NOTE:** We don't need SmartAgent on the MicroK8s node but we are installing it to show bulk installations on 3 nodes as part of this lab.
 * Machine Agent on all 2 nodes.
 
 #### Running Local Web-Server
@@ -710,7 +715,7 @@ However, in our environment, the automatic linking was successful because the ho
 
 Browser Real User Monitoring (BRUM) also requires an agent. This agent, in the form of a JavaScript configuration and a JavaScript file, needs to be added to the webpages serving the application. For Petclinic, this is the **API-GATEWAY** service. We've already prepared the deployments for you to easily add the agent in the right place.
 
-If you’re curious and up for a challenge, stop reading and explore the resources in the `petclinic` namespace of the K8s cluster and use the developer tools in Chrome.
+If you're curious and up for a challenge, stop reading and explore the resources in the `petclinic` namespace of the K8s cluster and use the developer tools in Chrome.
 
   * Is the AppDynamics BRUM agent (adrum) already loaded as part of the pages?
   * Is the AppDynamics BRUM agent configured, and does it send performance information?
@@ -775,7 +780,7 @@ By following these steps, you should be able to determine if the AppDynamics BRU
 
 ### Create a BRUM Application in AppDynamics ⚙️
 
-To get a proper configuration for the ADRUM agent (see [AppDynamics Docs](https://docs.appdynamics.com/appd/24.x/latest/en/end-user-monitoring/browser-monitoring/browser-real-user-monitoring/set-up-and-access-browser-rum)), you can navigate to the AppDynamics controller and log in with your pod’s credentials.
+To get a proper configuration for the ADRUM agent (see [AppDynamics Docs](https://docs.appdynamics.com/appd/24.x/latest/en/end-user-monitoring/browser-monitoring/browser-real-user-monitoring/set-up-and-access-browser-rum)), you can navigate to the AppDynamics controller and log in with your pod's credentials.
 
 #### Step 1: Create a new BRUM Application
 
@@ -790,7 +795,7 @@ To get a proper configuration for the ADRUM agent (see [AppDynamics Docs](https:
 4.  Navigate to **Configuration** (left menu) – **Configure JavaScript Agent**.
     This will create a unique App Key for the adrum agent and will ensure performance data received from the browser will show up in your BRUM Application.
 
-5.  Explore the UI and try to configure the advanced settings of the agent to match the following configuration. When selecting/changing options, you’ll see an updated generated config in the right panel.
+5.  Explore the UI and try to configure the advanced settings of the agent to match the following configuration. When selecting/changing options, you'll see an updated generated config in the right panel.
 
     ```javascript
     // ...
@@ -814,7 +819,7 @@ To get a proper configuration for the ADRUM agent (see [AppDynamics Docs](https:
     **Tip**: There are multiple tabs in the advanced settings; you need to change settings in each of the sections **General**, **Pages**, and **AJAX**.
 ![Install Agent - Summary](img/image029.png)
 *Image 29: Viewing the different setting after creating a browser application.*
-6.  Copy the final generated HTML snippet; we’re going to use this in the next steps.
+6.  Copy the final generated HTML snippet; we're going to use this in the next steps.
 
 #### Step 2: Inject the JavaScript Agent in the application
 
@@ -831,7 +836,7 @@ In this lab, we will modify the WebApplication directly.
 
     You can see that there is a ConfigMap called `agent-cm` which we prepared for you.
 3.  Using `kubectl -n petclinic describe cm agent-cm`, we can see the current configuration.
-    This script is already loaded when you access the Petclinic application; it renders the “agent.js loaded” string in the console you observed earlier. As the `adrum` agent is already loaded but missing its configuration, we’re going to add the configuration into this script.
+    This script is already loaded when you access the Petclinic application; it renders the "agent.js loaded" string in the console you observed earlier. As the `adrum` agent is already loaded but missing its configuration, we're going to add the configuration into this script.
 
 ![Install Agent - Summary](img/image031.png)
 *Image 31: Describing the Kubernetes configuration map.*
@@ -846,7 +851,7 @@ In this lab, we will modify the WebApplication directly.
 *Image 32: Editting the configuration map using Kubernetes built-in editor which is just `vi`.*
 
 5.  From your saved agent configuration, copy everything from `window[.....` to `{})));`.
-    We don’t need any of the `<script>` tags as we’re not embedding this in the HTML page but in a JavaScript file loaded in the webpage.
+    We don't need any of the `<script>` tags as we're not embedding this in the HTML page but in a JavaScript file loaded in the webpage.
     Also ensure, that the alignment is such that everything is indented at least 2 spaces behind the `agent.js:` tag (or similar, based on your `agent-cm` structure).
 6.  Hit `<esc>:wq` to save the file and verify its content.
 
@@ -922,11 +927,11 @@ AppDynamics provides default health rules based on the entity type (e.g., applic
 ![Install Agent - Summary](img/image035.png)
 *Image 35: Navigating to the `Alert & Respond` tab in the Appdynamics GUI.*
 
-2.  Ensure you’re in the correct application and click into **Health Rules** (usually found under the "Alert & Respond" section in the left-hand navigation).
+2.  Ensure you're in the correct application and click into **Health Rules** (usually found under the "Alert & Respond" section in the left-hand navigation).
 ![Install Agent - Summary](img/image036.png)
 *Image 36: Clicking into the Health Rule creation wizard.*
 
-3.  Once you’re in the Health Rules creation screen for your **Petclinic-X** application, begin to create a new health rule by clicking the **+ icon** (or a "Create" button).
+3.  Once you're in the Health Rules creation screen for your **Petclinic-X** application, begin to create a new health rule by clicking the **+ icon** (or a "Create" button).
 ![Install Agent - Summary](img/image037.png)
 *Image 37: Creating a new health rule from the launched wizard.*
 
@@ -964,34 +969,6 @@ AppDynamics provides default health rules based on the entity type (e.g., applic
 
 ## Business Transaction Detection & Refinement
 *Estimated Time: 30 minutes*
-
-<!-- 
-============================================================================
-                           INTRODUCTION
-============================================================================
--->
-
-### Introduction and Learning Objectives
-
-In this section, you will learn how to identify and configure missing business transactions in your application. By the end of this exercise, you will be able to:
-
-* Understand what business transactions are and why they are critical for monitoring
-* Use Live Preview to discover potential business transactions that weren't auto-detected
-* Create custom POJO (Plain Old Java Object) transaction rules to monitor background activities
-* Validate that your custom business transactions are working correctly
-* Apply best practices for business transaction management
-
-### What is a Business Transaction?
-
-In the Splunk AppDynamics application model, a **business transaction (BT)** represents an end-to-end, cross-tier processing path used to fulfill a request for a service provided by the application.
-
-The business transaction is a key component for effective application monitoring. It consists of all required services within your environment, such as login, search, and checkout, that are utilized to fulfill and respond to a user-initiated request. These transactions reflect the logical way users interact with your applications. 
-
-For example, activities such as adding an item to a shopping cart and then checking out involve various applications, databases, third-party APIs, and web services.
-
-> **Why Business Transactions Matter**: Business transactions provide context for performance metrics, allowing you to measure what matters most to your users and business. They help you pinpoint exactly where issues occur in complex distributed applications.
-
-More information can be found here: [AppDynamics Business Transactions Documentation](https://docs.appdynamics.com/appd/24.x/latest/en/application-monitoring/business-transactions)
 
 <!-- 
 ============================================================================
@@ -1478,7 +1455,7 @@ Go ahead and navigate to the Splunk GUI and login using the provided UN and Pass
 ![Install Agent - Summary](img/image064.png)
 *Image 64: Using the `Actions` buttons to `Configure App Server Agent`*
 
-4.  Select the **Application** level (or Tier/Node level if preferred) and click the **“Plus” Icon** to add a new agent property.
+4.  Select the **Application** level (or Tier/Node level if preferred) and click the **"Plus" Icon** to add a new agent property.
 ![Install Agent - Summary](img/image065.png)
 *Image 65: Configuring the Agent Properties.*
 
@@ -1498,7 +1475,7 @@ This property will be assigned to all connected agents, as well as to new agents
 
 ### Update the logging pattern for the `visits-service`
 
-For this, we’re going to create a new logback configuration to add the metadata of the agent into the actual log file. More can be found here: [Configure Splunk AppDynamics Agents](https://docs.appdynamics.com/appd/24.x/latest/en/unified-observability-experience-with-splunk/splunk-log-observer-connect-for-cisco-appdynamics/configure-splunk-appdynamics-agents)
+For this, we're going to create a new logback configuration to add the metadata of the agent into the actual log file. More can be found here: [Configure Splunk AppDynamics Agents](https://docs.appdynamics.com/appd/24.x/latest/en/unified-observability-experience-with-splunk/splunk-log-observer-connect-for-cisco-appdynamics/configure-splunk-appdynamics-agents)
 
 1.  On the `visits-service` machine/environment, navigate to the directory where the `visits-service` application is run from (likely `/home/cisco/spring-petclinic-microservices/deployments/hybrid/java` or where `run.sh.loc` is).
 
@@ -1616,7 +1593,7 @@ Refer to the official documentation for more details:
 OpenTelemetry is a collection of tools, APIs, and SDKs used to instrument, generate, collect, and export telemetry data (metrics, logs, and traces) to help you analyze software performance and behavior.
 Splunk AppDynamics provides an OpenTelemetry-compatible backend to ingest OpenTelemetry trace data using OpenTelemetry components. The ingested data is processed by the Splunk AppDynamics backend and displayed in the Controller UI. This service is referred to as Splunk AppDynamics for OpenTelemetry.
 
-In this lab, we’re going to instrument the pods in the `notification` namespace and the `visits-service` with OpenTelemetry, as these services might be handled by another vendor which does not allow the use of an AppDynamics agent. Still, we would like to get end-to-end visibility in the backend.
+In this lab, we're going to instrument the pods in the `notification` namespace and the `visits-service` with OpenTelemetry, as these services might be handled by another vendor which does not allow the use of an AppDynamics agent. Still, we would like to get end-to-end visibility in the backend.
 
 ### `visits-service` with OpenTelemetry
 
@@ -1852,655 +1829,28 @@ discovery-server (15 calls/min, 223ms avg. response time)
 
 ## Renaming Business Transactions
 
-While the auto-discovered Business Transaction names might be good for a more technical audience, sometimes it would be useful to have a more “speaking” name. While you could change your BT detection rules, there is a more elegant solution available by renaming the BT while keeping its original name. This way you can satisfy technical and non-technical users.
+While the auto-discovered Business Transaction names might be good for a more technical audience, sometimes it would be useful to have a more "speaking" name. While you could change your BT detection rules, there is a more elegant solution available by renaming the BT while keeping its original name. This way you can satisfy technical and non-technical users.
 
 1.  Select the Business Transaction you want to rename from the Business Transactions list.
 2.  Right-click on the Business Transaction.
 
 ![Install Agent - Summary](img/image075.png)
 *Image 75: Business Transaction list with a BT right-clicked.*
-3.  Select **“Rename”** from the context menu.
+3.  Select **"Rename"** from the context menu.
 4.  Enter a more friendly or descriptive name in the dialog box.
 ![Install Agent - Summary](img/image076.png)
 *Image 76: Rename Business Transaction dialog box.*
 
 5.  Click **Rename**.
     This will have an immediate effect and will update the Business Transaction view.
-6.  To see both the new display name and the original auto-discovered name, select **“View Options”** (often a gear icon or dropdown in the BT list view).
-7.  Select **“Original Name”** (or a similar option to show original/internal names).
+6.  To see both the new display name and the original auto-discovered name, select **"View Options"** (often a gear icon or dropdown in the BT list view).
+7.  Select **"Original Name"** (or a similar option to show original/internal names).
     ![Install Agent - Summary](img/image077.png)
     *Image 77: View Options menu with "Original Name" selected*
 
     This now will show both names in the BT UI, providing clarity for different user perspectives.
 ![Install Agent - Summary](img/image078.png)
 *Image 78: Business Transaction list showing both display name and original name*
-
-<!-- 
-============================================================================
-                    SERVICE ENDPOINTS CONFIGURATION
-============================================================================
--->
-
-## Service Endpoints Configuration
-*Estimated Time: 25-30 minutes*
-
-### Learning Objectives
-
-By completing this section, you will be able to:
-
-* Understand what service endpoints are and their importance in API monitoring
-* Configure custom service endpoints for critical API operations
-* Monitor service-level metrics independent of business transactions
-* Validate that service endpoint monitoring is working correctly
-* Apply best practices for effective service endpoint configuration
-
-### What Are Service Endpoints?
-
-Service endpoints in AppDynamics provide a way to monitor the performance of specific API entry points in your application, regardless of how they map to business transactions. While business transactions track end-to-end user journeys, service endpoints focus specifically on the performance of individual API endpoints or services.
-
-This is particularly valuable in microservices architectures where you want to monitor service interfaces independently of how they're used in business flows.
-
-> **Why Service Endpoints Matter**: In API-driven applications, monitoring individual service performance is critical for ensuring service level agreements (SLAs) are met. Service endpoints allow you to track metrics like call volume, error rates, and response times for specific API operations.
-
-### Key Benefits of Service Endpoints
-
-* **API-Centric Monitoring**: Focus on your service interfaces rather than user workflows
-* **Service-Level Metrics**: Track calls, errors, and performance for individual API endpoints
-* **SLA Tracking**: Monitor API performance against defined service level objectives
-* **API Versioning Support**: Monitor different versions of your APIs separately
-* **Reduced Noise**: Create targeted monitors for critical services without the noise of all business transactions
-
-### Exercise: Configuring Service Endpoints for the PetClinic API
-*Estimated Time: 15 minutes*
-
-In this exercise, you'll configure service endpoints to monitor important API operations in the PetClinic application.
-
-#### Step 1: Access Service Endpoint Configuration
-
-1. In the AppDynamics Controller UI, navigate to:
-   * Click on **Configuration** in the left navigation menu
-   * Select **Instrumentation**
-   * Click on **Service Endpoints**
-
-2. In the Service Endpoints screen:
-   * Select your **Application** (e.g., Petclinic-X) from the dropdown
-   * Ensure you're working with your assigned application
-
-![Service Endpoints Configuration Screen](img/image079.png)
-*Image 79: Service Endpoints configuration screen*
-
-**Expected Outcome**: The service endpoints configuration page should load, showing any existing service endpoints for your application.
-
-#### Step 2: Create a New Service Endpoint for the Visits API
-
-1. Click the **+** (plus) button to create a new service endpoint
-
-2. In the **Create Service Endpoint** dialog:
-   * **Name**: Enter `VisitsAPI-CreateVisit`
-   * **Entry Point Type**: Select `Servlet`
-   * **Class Name**: Leave blank (will use URI matching)
-   * **Method Name**: Leave blank (will use URI matching)
-   * **URI**: Enter `/owners/*/pets/*/visits`
-   * **HTTP Method**: Select `POST` from the dropdown
-
-![Create Service Endpoint Dialog](img/image080.png)
-*Image 80: Creating a service endpoint for the Visits API*
-
-3. Click **Create** to save the service endpoint
-
-**Expected Outcome**: The new service endpoint will be created and displayed in the list of service endpoints.
-
-#### Step 3: Create Additional Service Endpoints
-
-Let's create two more service endpoints to cover other important API operations:
-
-1. Repeat the process to create a service endpoint for retrieving owners:
-   * **Name**: `OwnersAPI-GetOwner`
-   * **Entry Point Type**: `Servlet`
-   * **URI**: `/owners/*`
-   * **HTTP Method**: `GET`
-
-2. Create another service endpoint for searching owners:
-   * **Name**: `OwnersAPI-FindOwners`
-   * **Entry Point Type**: `Servlet`
-   * **URI**: `/owners/find`
-   * **HTTP Method**: `GET`
-
-**Expected Outcome**: You should now have three service endpoints configured for monitoring key API operations in the PetClinic application.
-
-#### Step 4: Generate Traffic to the Service Endpoints
-
-For the service endpoints to collect data, you need to generate traffic to the monitored URIs:
-
-1. Open the PetClinic application in your browser (`http://198.18.134.23:8080`)
-
-2. Generate traffic for each endpoint:
-   * For `VisitsAPI-CreateVisit`: Add a new visit to a pet
-   * For `OwnersAPI-GetOwner`: View owner details
-   * For `OwnersAPI-FindOwners`: Search for owners
-
-3. Alternatively, you can use curl commands to generate traffic:
-
-```bash
-# For VisitsAPI-CreateVisit
-curl -X POST -H "Content-Type: application/json" \
-  -d '{"date":"2025-05-19","description":"Annual checkup"}' \
-  http://198.18.134.23:8080/owners/1/pets/1/visits
-
-# For OwnersAPI-GetOwner
-curl -X GET http://198.18.134.23:8080/owners/1
-
-# For OwnersAPI-FindOwners
-curl -X GET http://198.18.134.23:8080/owners/find
-```
-
-### Validation Steps
-*Estimated Time: 5 minutes*
-
-To verify your service endpoints are working correctly:
-
-1. In the AppDynamics Controller UI, navigate to:
-   * Click on your application
-   * Select **Service Endpoints** from the left navigation menu
-
-2. You should see your configured service endpoints with metrics:
-   * **Calls per Minute**: Number of requests to the endpoint
-   * **Average Response Time (ms)**: Response time in milliseconds
-   * **Errors per Minute**: Error count for the endpoint
-
-![Service Endpoints Metrics](img/image081.png)
-*Image 81: Service Endpoints metrics dashboard*
-
-**Success Criteria**: Each service endpoint should show metrics data, including call counts and response times. The metrics should update as you generate more traffic to the endpoints.
-
-### Troubleshooting Service Endpoints
-*Estimated Time: 5 minutes*
-
-If your service endpoints aren't collecting data:
-
-* **URI Pattern Issues**: 
-  - Ensure the pattern matches the actual request path
-  - Check that wildcards (`*`) are used correctly
-  - Verify that the pattern is specific enough but not too restrictive
-
-* **HTTP Method Mismatch**:
-  - Confirm that you've selected the correct HTTP method (GET, POST, etc.)
-  - If the endpoint handles multiple methods, create separate service endpoints for each
-
-* **No Traffic**:
-  - Verify that requests are actually being made to the endpoint
-  - Check app server logs to confirm traffic is reaching the server
-
-* **Agent Configuration**:
-  - Some agents require a restart after adding service endpoints
-  - Verify the agent is up-to-date and properly configured
-
-> **Warning**: If you're using wildcards in URI patterns, ensure they're not too broad. Overly generic patterns might match unintended requests and dilute your metrics.
-
-### Advanced Service Endpoint Features
-*Estimated Time: 5-10 minutes*
-
-#### Custom Match Rules
-
-For more complex scenarios, you can create custom match rules for service endpoints:
-
-1. When creating a service endpoint, select **Custom** as the rule type
-2. This allows more advanced configurations:
-   * Match by class and method instead of URI
-   * Apply custom conditions to method parameters
-   * Configure more complex URI matching patterns
-
-![Custom Match Rule Configuration](img/image082.png)
-*Image 82: Configuring a custom match rule for service endpoints*
-
-#### Service Endpoint Policies
-
-You can also configure policies specifically for service endpoints:
-
-1. Navigate to **Alert & Respond** > **Policies**
-2. Create a new policy that triggers on service endpoint conditions
-3. Configure actions like email notifications or webhooks
-
-This allows you to set up alerting specifically for API performance issues.
-
-### Best Practices for Service Endpoints
-
-1. **Focus on Critical APIs**: Monitor the most business-critical or performance-sensitive APIs
-
-2. **Use Consistent Naming**: Adopt a naming convention that clearly indicates the operation:
-   * `[ServiceName]-[Operation]` (e.g., `VisitsAPI-CreateVisit`)
-   * `[Domain]-[Action]` (e.g., `Pets-GetDetails`)
-
-3. **Right-Size Granularity**: 
-   * Too many endpoints create noise and overhead
-   * Too few endpoints reduces visibility
-   * Find the right balance for your application
-
-4. **Consider API Versions**: 
-   * For versioned APIs, include version in the service endpoint name
-   * This helps track performance across API versions
-
-5. **Align with SLAs**: 
-   * Configure health rules that align with your API's service level agreements
-   * Set thresholds based on documented SLA requirements
-
-6. **Document Your Configuration**:
-   * Keep records of what each service endpoint monitors and why
-   * Document the expected performance characteristics
-
-### Summary
-
-You've now successfully configured service endpoints to monitor key API operations in your application. This provides you with:
-
-* Detailed visibility into API performance
-* The ability to track service-level metrics independently of business transactions
-* A foundation for SLA monitoring and API governance
-
-Service endpoints complement business transaction monitoring by focusing specifically on your service interfaces, providing a service-oriented view alongside the user-journey perspective of business transactions.
-
------
-
-<!-- 
-============================================================================
-                          MONITORING BEST PRACTICES
-============================================================================
--->
-
-## Monitoring Best Practices
-*Estimated Time: 30-45 minutes*
-
-### Introduction
-
-After setting up AppDynamics agents and configuring various monitoring components, it's essential to follow best practices to ensure optimal monitoring effectiveness. This section provides practical guidance for maximizing the value of your AppDynamics implementation.
-
-> **Why This Matters**: Effective monitoring requires more than just tool implementation—it requires thoughtful configuration and maintenance. Following these best practices will help you avoid common pitfalls, reduce alert noise, and gain more actionable insights from your monitoring data.
-
-### Learning Objectives
-
-By completing this section, you will:
-
-* Understand key principles for effective application monitoring
-* Learn how to optimize Business Transaction detection and naming
-* Implement best practices for backend detection and service endpoint monitoring
-* Create effective health rules that avoid false positives
-* Develop a strategic approach to alert and policy management
-
-### Business Transaction Monitoring Best Practices
-*Estimated Time: 10 minutes*
-
-Business Transactions (BTs) are at the heart of AppDynamics monitoring. Following these best practices will ensure you're monitoring the most important transactions while avoiding unnecessary overhead.
-
-#### Key Principles for BT Management
-
-1. **Focus on Business-Critical Flows**
-   * Prioritize transactions that directly impact your business objectives
-   * Example in PetClinic: "Add Visit," "Find Owner," and "View Veterinarians"
-
-2. **Maintain Optimal BT Count**
-   * Target 50-200 BTs per application for most environments
-   * Too many BTs increase overhead; too few reduce visibility
-
-3. **Implement Consistent Naming Conventions**
-   * Use descriptive, business-oriented names
-   * Follow patterns like `[Service]-[Action]-[Resource]`
-   * Example: `VisitsService-Create-Visit` instead of `/owners/{id}/pets/{id}/visits`
-
-4. **Exclude Non-Essential Transactions**
-   * Create exclusion rules for health checks, static resources, etc.
-   * Example: We excluded `/actuator/**` endpoints earlier in this lab
-
-#### Implementation Steps
-
-1. Review your current BT list in the AppDynamics UI:
-   * Navigate to **Business Transactions** in your application
-   * Identify and rename critical transactions using the right-click menu
-   * Group similar transactions using the **Custom Match Rules**
-
-2. Create exclusion rules for low-value transactions:
-   * Navigate to **Configuration** > **Instrumentation** > **Transaction Detection**
-   * Create **Custom Match Rules** with **Exclude Transaction** action for patterns like:
-     * `/resources/**` (static resources)
-     * `/images/**` (image files)
-     * `/healthcheck` (monitoring endpoints)
-
-#### Validation Steps
-
-To verify your BT configuration is effective:
-
-1. Check BT load statistics:
-   * Navigate to **Business Transactions** > **Load** view
-   * Verify your most important transactions appear at the top
-   * Critical transactions should show consistent monitoring data
-
-2. Review the Transaction Score view:
-   * Navigate to **Home** > **Transaction Scores**
-   * Verify that business-critical transactions have appropriate scores
-
-#### Common Pitfalls to Avoid
-
-* **Over-instrumentation**: Monitoring too many BTs causes agent overhead
-* **Generic naming**: Using URL paths directly as BT names reduces clarity
-* **Ignoring background tasks**: Missing important non-user-initiated processes
-* **Neglecting exclusion rules**: Creating noise from monitoring non-essential transactions
-
-> **Tip**: Review your BT list quarterly to ensure it remains aligned with business priorities and application changes.
-
-### Backend Detection Optimization Tips
-*Estimated Time: 5-10 minutes*
-
-Backend systems often play a critical role in application performance. Optimizing backend detection ensures you have accurate visibility into these dependencies.
-
-#### Key Principles for Backend Detection
-
-1. **Right-Size Backend Granularity**
-   * Balance between too generic (all backends as one) and too specific (every endpoint as unique)
-   * For PetClinic: Group by service name but differentiate by function (e.g., discovery-server vs. config-server)
-
-2. **Apply Consistent Naming**
-   * Use naming that reflects the business purpose, not just technical details
-   * For databases, include purpose (e.g., "PetClinic-CustomerDB" rather than just "MySQL")
-
-3. **Group Related Backends**
-   * Consolidate multiple endpoints of the same service (as we did in the lab)
-   * Use custom names to provide business context
-
-#### Implementation Steps
-
-1. Review your current backend detection in the AppDynamics UI:
-   * Navigate to your application flow map
-   * Examine the backend systems shown
-   * Identify opportunities for consolidation or renaming
-
-2. Apply custom naming rules:
-   * Navigate to **Configuration** > **Instrumentation** > **Backend Detection**
-   * Modify the naming schemes for different backend types
-   * For HTTP backends: Use "Host only" for services with multiple ports
-   * For databases: Add custom detection rules that include business context
-
-#### Validation Steps
-
-To verify your backend configuration is effective:
-
-1. Check the application flow map:
-   * The flow map should show logical groupings of related backends
-   * Backend names should be meaningful and consistent
-
-2. Review the backend metrics:
-   * Navigate to a tier and check the **Remote Services** tab
-   * Verify metrics are being collected properly for all backend systems
-
-#### Common Pitfalls to Avoid
-
-* **Excessive granularity**: Creating too many unique backends makes analysis difficult
-* **Missing context**: Using only technical identifiers in backend names
-* **Inconsistent naming**: Using different conventions across similar backends
-* **Ignoring non-standard backends**: Missing custom protocols or third-party services
-
-> **Real-world example**: In the PetClinic application, we consolidated discovery-server endpoints with different ports to provide a clearer view of service dependencies.
-
-### Service Endpoint Monitoring Recommendations
-*Estimated Time: 5-10 minutes*
-
-Service endpoints provide API-centric monitoring, complementing the user-journey focus of business transactions. These recommendations will help you effectively use service endpoints in your monitoring strategy.
-
-#### Key Principles for Service Endpoints
-
-1. **Monitor Critical APIs**
-   * Focus on high-volume and business-critical APIs
-   * For PetClinic: Key endpoints like owner management and visit scheduling
-
-2. **Align with SLAs**
-   * Configure service endpoints that match documented SLAs
-   * Set appropriate performance thresholds based on SLA requirements
-
-3. **Use Consistent Naming Patterns**
-   * Follow naming conventions like `[ServiceName]-[Operation]`
-   * Example: `OwnerAPI-GetDetails` or `VisitAPI-CreateVisit`
-
-4. **Balance Coverage and Overhead**
-   * Avoid creating too many service endpoints
-   * Target important interfaces rather than monitoring every API endpoint
-
-#### Implementation Steps
-
-1. Identify key API endpoints:
-   * Review your application architecture
-   * Identify APIs with SLAs or critical business functions
-   * For PetClinic: Owner, Pet, and Visit management APIs
-
-2. Configure service endpoints:
-   * Navigate to **Configuration** > **Instrumentation** > **Service Endpoints**
-   * Create endpoints for your critical APIs using URI patterns
-   * Example: `/owners/*` for owner retrieval operations
-
-3. Set up monitoring:
-   * Configure health rules specific to service endpoints
-   * Set appropriate thresholds based on expected performance
-
-#### Validation Steps
-
-To verify your service endpoint configuration is effective:
-
-1. Generate traffic to your service endpoints:
-   * Use the application UI or direct API calls
-   * Ensure all configured endpoints receive traffic
-
-2. Check the Service Endpoints dashboard:
-   * Navigate to **Service Endpoints** in your application
-   * Verify metrics are being collected for all endpoints
-   * Confirm that names are clear and consistent
-
-#### Common Pitfalls to Avoid
-
-* **Excessive endpoint creation**: Monitoring too many endpoints creates noise
-* **Overly broad URI patterns**: Using patterns that match too many different operations
-* **Ignoring API versions**: Not accounting for API versioning in endpoint configuration
-* **Neglecting service endpoints**: Creating them but not using them for monitoring or alerting
-
-> **Tip**: Service endpoints are particularly valuable for microservices architectures where individual API performance is as important as end-to-end transaction performance.
-
-### Health Rule Configuration Guidelines
-*Estimated Time: 10-15 minutes*
-
-Health rules define normal performance thresholds for your application. Well-designed health rules provide accurate alerts without false positives.
-
-#### Key Principles for Health Rules
-
-1. **Start with Business Impact**
-   * Focus on conditions that directly affect users or business outcomes
-   * For PetClinic: Response time for "Add Visit" or error rate for "Find Owner"
-
-2. **Use Appropriate Baselines**
-   * Leverage dynamic baselines for metrics with normal variations
-   * Use fixed thresholds for metrics with strict requirements (e.g., SLAs)
-
-3. **Layer Your Health Rules**
-   * Create a hierarchy from infrastructure to application to business metrics
-   * Distinguish between warning and critical conditions
-
-4. **Consider Evaluation Window**
-   * Use longer evaluation windows (5-15 minutes) to avoid alerts on brief spikes
-   * Use shorter windows only for truly critical conditions
-
-#### Implementation Steps
-
-1. Review your application components:
-   * Identify critical business transactions
-   * List important infrastructure components
-   * Determine key performance indicators
-
-2. Create tiered health rules:
-   * Navigate to **Alert & Respond** > **Health Rules**
-   * Create rules for different entity types:
-     * **Business Transaction Performance**: Response time, error rate
-     * **Infrastructure**: CPU, memory, disk I/O
-     * **Service Endpoints**: API-specific performance
-
-3. Configure appropriate thresholds:
-   * For dynamic environments: Use "Automatic Baseline" with appropriate sensitivity
-   * For SLA-bound metrics: Use fixed values based on your requirements
-   * For PetClinic example:
-     ```
-     Business Transaction "Add Visit":
-     - Warning: Response Time > 3 seconds
-     - Critical: Response Time > 5 seconds
-     - Warning: Error Rate > 2%
-     - Critical: Error Rate > 5%
-     ```
-
-#### Validation Steps
-
-To verify your health rule configuration is effective:
-
-1. Test with normal traffic:
-   * Generate typical application usage
-   * Verify no false positive alerts occur
-
-2. Test with problematic conditions (if possible):
-   * Simulate slow responses or errors
-   * Verify alerts trigger appropriately
-
-3. Review historical health rule evaluations:
-   * Navigate to **Events** > **Filter by Health Rule Violations**
-   * Analyze if the frequency and timing of alerts make sense
-
-#### Common Pitfalls to Avoid
-
-* **Too many alerts**: Creating overly sensitive rules that generate alert fatigue
-* **Static thresholds only**: Not accounting for natural variations in application performance
-* **Missing business context**: Focusing on technical metrics without tying to business impact
-* **Over-customization**: Creating unique health rules for every component instead of using templates
-
-> **Best Practice**: Start with a small set of critical health rules and gradually expand. It's better to have a few reliable alerts than many noisy ones.
-
-### Alert and Policy Management
-*Estimated Time: 5-10 minutes*
-
-Effective alert and policy management ensures that the right people receive actionable notifications about important issues.
-
-#### Key Principles for Alerts and Policies
-
-1. **Align Notifications with Responsibilities**
-   * Route alerts to the teams who can take action
-   * For PetClinic: Database issues to DBAs, application errors to developers
-
-2. **Use Notification Hierarchy**
-   * Different severity levels for different channels
-   * Example: Critical issues to pager/phone, warnings to email/chat
-
-3. **Include Actionable Information**
-   * Provide context in alert messages
-   * Include links to relevant dashboards or troubleshooting resources
-
-4. **Implement Alert Suppression**
-   * Prevent alert storms during major outages
-   * Use dependencies to suppress redundant alerts
-
-#### Implementation Steps
-
-1. Define alert recipients:
-   * Identify who should receive different types of alerts
-   * Create email templates with appropriate context for each alert type
-   * Consider on-call rotations for critical notifications
-
-2. Create action templates:
-   * Navigate to **Alert & Respond** > **Actions**
-   * Create email actions with detailed templates
-   * Set up integrations with ticketing systems or chat platforms
-   * Example template:
-```properties
-Subject: [CRITICAL] PetClinic Application: ${healthRuleName} violation
-
-Application: ${applicationName}
-Health Rule: ${healthRuleName}
-Affected Entity: ${affectedEntityName}
-Severity: ${severity}
-
-Issue details:
-- Started: ${violationStartTimeUtc}
-- Current value: ${metricValue} ${metricName}
-- Threshold: ${thresholdValue}
-
-Troubleshooting link: ${controllerUrl}/controller/#/location=APP_DASHBOARD&application=${applicationId}
-```
-
-3. Configure policies:
-   * Navigate to **Alert & Respond** > **Policies**
-   * Create policies that link health rule violations to actions
-   * Set appropriate execution criteria (e.g., trigger after 2 minutes of violation)
-
-![Policy Configuration](img/image083.png)
-*Image 83: Configuring a policy to trigger actions based on health rule violations*
-
-#### Real-World Example: PetClinic Alert Strategy
-
-Here's an example alert strategy for the PetClinic application:
-| Entity Type | Health Rule | Severity | Recipient | Channel |
-|-------------|-------------|----------|-----------|---------|
-| Business Transaction | "Add Visit" Response Time > 5s | Critical | App Support Team | Email + SMS |
-| Business Transaction | "Add Visit" Error Rate > 5% | Critical | Development Team | Email + Slack |
-| Infrastructure | Database Node CPU > 80% | Warning | DBA Team | Email |
-| Infrastructure | Database Node CPU > 95% | Critical | DBA Team | Email + SMS |
-| Service Endpoint | "VisitsAPI" Error Rate > 2% | Warning | API Team | Email |
-
-#### Validation Steps
-
-To verify your alert configuration is effective:
-
-1. Simulate alert conditions:
-   * For response time alerts: Use a load testing tool or simulate slow conditions
-   * For error rate alerts: Use a test script that generates errors
-   * For infrastructure alerts: Temporarily stress test a component
-
-2. Verify alert delivery:
-   * Check that notifications are sent to the correct recipients
-   * Confirm that the alert content is clear and actionable
-   * Verify that links in alerts lead to relevant data
-
-**Success Criteria**: Alerts should trigger within the expected timeframe, be delivered to the correct recipients, and contain enough context for recipients to begin troubleshooting.
-
-#### Troubleshooting Alert Issues
-
-If alerts aren't working as expected:
-
-* **Missing alerts**:
-  - Verify health rule configuration (thresholds, evaluation window)
-  - Check that the policy is enabled and correctly linked to health rules
-  - Ensure that actions are properly configured
-
-* **Too many alerts**:
-  - Increase thresholds or extend evaluation windows
-  - Implement alert suppression for related components
-  - Use dependencies to avoid alert storms
-
-* **Delivery problems**:
-  - Check email server configuration
-  - Verify that recipient addresses are correct
-  - Test integration endpoints (Slack, PagerDuty, etc.)
-
-#### Best Practices for Alert Management
-
-1. **Start Small and Expand**:
-   * Begin with a few critical alerts and gradually add more
-   * Avoid overwhelming teams with too many notifications
-
-2. **Regular Review**:
-   * Audit alerts quarterly to reduce noise
-   * Remove or adjust alerts that trigger too frequently
-
-3. **Categorize by Severity**:
-   * Create clear definitions for Warning vs. Critical
-   * Align severity with business impact
-
-4. **Document Alert Procedures**:
-   * Create runbooks for common alert scenarios
-   * Document escalation procedures
-
-5. **Alert Consolidation**:
-   * Group related alerts to reduce noise
-   * Use hierarchical health models
-
-> **Real-world tip**: When implementing AppDynamics in large organizations, create a "monitoring working group" with representatives from different teams to align on alert strategies and ensure consistency across applications.
 
 <!-- 
 ============================================================================
@@ -2588,201 +1938,3 @@ To build on what you've learned:
 Thank you for participating in this lab! We hope you found it valuable and that you'll apply these monitoring techniques to improve observability in your own environments.
 
 -----
-
-<!-- 
-============================================================================
-                   MONITORING DASHBOARDS AND ANALYTICS
-============================================================================
--->
-
-## Monitoring Dashboards and Analytics
-*Estimated Time: 45-60 minutes*
-
-### Introduction
-
-After setting up comprehensive monitoring with AppDynamics, the next critical step is visualizing and analyzing that data effectively. Custom dashboards transform raw monitoring data into actionable insights for different stakeholders - from technical teams needing detailed performance metrics to business leaders requiring high-level KPIs.
-
-> **Why This Matters**: While AppDynamics provides excellent out-of-the-box visualizations, custom dashboards tailored to your specific needs significantly enhance your ability to identify trends, spot anomalies, and communicate insights across your organization.
-
-### Learning Objectives
-
-By completing this section, you will:
-
-* Create custom dashboards for different audience needs
-* Configure analytics queries to extract valuable insights
-* Set up business metrics to connect technical performance with business outcomes
-* Design effective visualization widgets
-* Implement dashboard best practices
-
-### Creating Custom Dashboards
-*Estimated Time: 15 minutes*
-
-Custom dashboards in AppDynamics allow you to combine metrics from various sources into targeted views for different audiences and use cases.
-
-#### Step 1: Access the Dashboard Interface
-
-1. In the AppDynamics Controller UI, navigate to:
-   * Click on **Dashboards & Reports** in the top navigation menu
-   * Select **Dashboards** from the dropdown
-
-2. Click the **Create Dashboard** button in the top-right corner
-
-![Create Dashboard Button](img/image084.png)
-*Image 84: Accessing the dashboard creation interface*
-
-#### Step 2: Configure Dashboard Properties
-
-1. In the **Create Dashboard** dialog:
-   * **Name**: Enter `PetClinic Performance Overview`
-   * **Description**: Enter `Key performance metrics for the PetClinic application`
-   * **Time Range**: Select `Last 1 hour` (default)
-
-2. Click **OK** to create the dashboard
-
-**Expected Outcome**: A new blank dashboard will be created and opened for editing.
-
-#### Step 3: Add Widgets to Your Dashboard
-
-1. In the dashboard editor, click the **+ Add Widget** button
-
-2. From the widget gallery, select **Metric Graph**:
-   * This is the most versatile widget type for displaying time-series data
-
-3. Configure the widget:
-   * **Title**: Enter `Key Business Transaction Response Times`
-   * **Type**: Leave as `Line Graph`
-   * **Metric Source**: Select `Application`
-   * **Application**: Choose your `Petclinic-X` application
-   * **Metric Hierarchy**: Navigate to `Overall Application Performance > Business Transaction Performance > Average Response Time (ms)`
-   * **Business Transactions**: Select 3-5 of your most important transactions
-
-4. Click **Save** to add the widget to your dashboard
-
-![Widget Configuration](img/image085.png)
-*Image 85: Configuring a metric graph widget*
-
-5. Repeat steps 1-4 to add additional widgets:
-   * A **Pie Chart** showing transaction error rates
-   * A **Gauge** showing overall application health
-   * A **Metric Graph** showing database response times
-
-#### Step 4: Arrange and Resize Widgets
-
-1. Click and drag widgets to position them optimally
-
-2. Resize widgets by clicking and dragging the widget edges
-
-3. Create a logical flow from high-level metrics to detailed data
-
-4. Click **Save** in the top-right corner to preserve your layout
-
-**Expected Outcome**: Your dashboard should now display multiple widgets arranged in a user-friendly layout.
-
-#### Validation Steps
-
-To verify your dashboard is functioning correctly:
-
-1. Exit edit mode by clicking the **Exit Edit Mode** button
-
-2. Wait a few minutes for data to populate the widgets
-
-3. Verify that all widgets are displaying data without errors
-
-4. Test different time ranges using the time picker at the top of the dashboard
-
-**Success Criteria**: All widgets should display appropriate data for the selected time range, and the dashboard should provide a comprehensive view of application performance.
-
-#### Troubleshooting Dashboard Issues
-
-* **Empty Widgets**:
-  - Verify that you selected the correct application and metrics
-  - Ensure the application is generating traffic for the selected metrics
-  - Try extending the time range to include more historical data
-
-* **Layout Problems**:
-  - If widgets overlap unexpectedly, re-enter edit mode and adjust widget sizes
-  - If changes aren't saving, check your user permissions for dashboard editing
-
-* **Performance Issues**:
-  - Too many widgets can slow dashboard loading times
-  - Consider splitting complex dashboards into multiple focused dashboards
-
-### Using Analytics Features
-*Estimated Time: 15 minutes*
-
-AppDynamics Analytics allows you to perform deeper investigations into your monitoring data through powerful query capabilities.
-
-#### Step 1: Access Analytics
-
-1. In the AppDynamics Controller UI, navigate to:
-   * Click on **Analytics** in the left navigation menu
-   * Select **Searches** to open the Analytics search interface
-
-![Analytics Interface](img/image086.png)
-*Image 86: Accessing the Analytics search interface*
-
-#### Step 2: Create a Basic Transaction Analytics Query
-
-1. In the Analytics interface:
-   * **Data Type**: Select `Transactions`
-   * **Time Range**: Choose `Last 1 hour`
-
-2. In the query builder area, construct a basic query:
-   * Click **Add Criteria**
-   * Select field `Application` and set it to your Petclinic application
-   * Add another criteria for `Business Transaction Name` and select one of your key transactions
-
-3. Click **Search** to execute the query
-
-![Basic Analytics Query](img/image087.png)
-*Image 87: Building a basic transaction analytics query*
-
-**Expected Outcome**: The results pane will show individual transaction instances matching your criteria.
-
-#### Step 3: Create an Advanced Analytics Visualization
-
-1. Based on your query results, create a visualization:
-   * Click on the **Visualization** tab above the results
-   * Select visualization type `Column Chart`
-   * For X-Axis, select `Business Transaction Name`
-   * For Y-Axis, select `Average Response Time (ms)`
-
-2. Click **Apply** to generate the visualization
-
-3. To save this visualization:
-   * Click **Save As** in the top-right corner
-   * Name it `Transaction Response Time Analysis`
-   * Click **Save**
-
-![Analytics Visualization](img/image088.png)
-*Image 88: Creating an analytics visualization*
-
-#### Step 4: Add Analytics to Your Dashboard
-
-1. Once saved, add your analytics visualization to a dashboard:
-   * Click **Add to Dashboard**
-   * Select your `PetClinic Performance Overview` dashboard
-   * Click **Add**
-
-**Expected Outcome**: Your analytics visualization is now integrated into your custom dashboard.
-
-#### Validation Steps
-
-To verify your analytics features are working correctly:
-
-1. Navigate back to your dashboard
-
-2. Locate your newly added analytics widget
-
-3. Verify it displays data consistent with your query parameters
-
-4. Test updating the widget by editing it and modifying query criteria
-
-**Success Criteria**: The analytics widget should display accurate data based on your query parameters and update appropriately when you modify the underlying query.
-
-#### Advanced Analytics Tips
-
-* **Segmentation**: Add multiple series to visualizations by using the **Split** feature
-* **Filtering**: Use the **Add Criteria** function to focus on specific error types or conditions
-* **Correlation**: Create visualizations that correlate business metrics with technical performance
-* **Export**: Use the **Export** feature to share analytics results with stakeholders

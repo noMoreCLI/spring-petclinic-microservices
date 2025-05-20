@@ -409,7 +409,7 @@ SmartAgentCLI in this lab will install:
 
 * Smart Agent on all three nodes.
     * **NOTE:** We don't need SmartAgent on the MicroK8s node but we are installing it to show bulk installations on 3 nodes as part of this lab.
-* Machine Agent on all 2 nodes.
+* Machine Agent on 2 nodes `visits-service-x` and `petclinic-db-x`.
 
 #### Running Local Web-Server
 

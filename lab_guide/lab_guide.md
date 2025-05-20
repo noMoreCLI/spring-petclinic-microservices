@@ -537,8 +537,6 @@ From the AppDynamics Overview Page, locate and click on the **Agent Management**
 
 
 ### Step 4: Complete the Upgrade Process:
-   * Review the summary screen that shows the selected hosts and agent type
-   * Click "Next" to proceed with the upgrade
    * The system will automatically handle the upgrade process
    * You can monitor the progress in the "Tasks in Progress" section
    * Once complete, verify the new agent version in the Agent Management screen and the History Tab

@@ -1865,9 +1865,12 @@ This configuration will instruct the AppDynamics Agent to also start using OpenT
 
 #### Verify and Update the OTel Collector Configuration 
 
-This step assumes an OpenTelemetry Collector is deployed, possibly in the `notification` namespace or a central `splunk` namespace. If you deployed one with Helm earlier, its configuration might be in the `values.yaml` or a separate ConfigMap. For this lab, we assume a ConfigMap `otel-collector-config-map.yaml` might exist or needs adjustment.
+This step assumes the Splunk Distribution OpenTelemetry Collector is deployed in the namespace `splunk` as part of the Log Observer Connect Lab. 
 
-1.  Ensure the OTel Collector's configuration correctly sets the `service.namespace` attribute for data originating from the `notification` services. If you are editing a ConfigMap for a collector that specifically serves the `notification` namespace, you might add or modify a processor to set this.
+1. Change the OTel Collector's configuration to set the `service.namespace` attribute for data originating from the `notification` services. You can find the the configmap in the `deployments/microk8s/otel-collector/otel-collector-config-map.yaml`
+
+Modify the processors section for this this.
+
     Example snippet for a processor in an OTel Collector ConfigMap:
     ```yaml
     processors:
@@ -1875,17 +1878,22 @@ This step assumes an OpenTelemetry Collector is deployed, possibly in the `notif
         attributes:
           - key: service.namespace
             value: Petclinic-X # Change Petclinic-X to your value
-            action: insert
+            action: upsert
     # ... other processor configurations
     ```
-2.  If you modified a ConfigMap (e.g., `notification-service/otel-collector-config-map.yaml`), apply it and restart the collector:
-    ```bash
-    # Example if the ConfigMap is applied from a file:
-    # kubectl apply -n notification -f notification-service/otel-collector-config-map.yaml
-    # kubectl -n notification rollout restart deployment otel-collector
+2. Deploy the OTel Collector in the `notification` namespace.
 
-    # If using the Helm-deployed collector, you might need to update via Helm with a modified values.yaml
-    ```
+```bash
+kubectl apply -n notification -f deployments/microk8s/otel-collector/
+```
+
+> [!TIP]
+>  If you modified a ConfigMap (e.g., `notification-service/otel-collector-config-map.yaml`), apply it and restart the collector:
+>    ```bash
+>    # Example if the ConfigMap is applied from a file:
+>    kubectl apply -n notification -f notification-service/otel-collector-config-map.yaml
+>    kubectl -n notification rollout restart deployment otel-collector
+>    ```
 
 #### Auto-instrument the `notification-service` using OTel Operator
 
@@ -1897,8 +1905,10 @@ This requires the OpenTelemetry Operator to be installed in your Kubernetes clus
     ```
     *(You might need to specify which OpenTelemetry `Instrumentation` custom resource to use via another annotation if you have multiple, e.g., `instrumentation.opentelemetry.io/java-instrumentation: "my-java-instrumentation"`)*
 
-There is a lot of magic going on behind the scenes, which has been prepared in this lab. If you want to know more, feel free to ask.
-In essence, if the OTel Operator is installed in the k8s cluster and an `Instrumentation` custom resource is created (defining how to instrument, e.g., environment variables for exporter endpoint, resource attributes), the Operator sees the annotation attached to deployments. It will then automatically attach the OTel Java agent using the given configuration.
+> [!NOTE]
+> There is a lot of magic going on behind the scenes, which has been prepared in this lab. If you want to know more, feel free to ask.
+>
+> In essence, if the OTel Operator is installed in the k8s cluster and an `Instrumentation` custom resource is created (defining how to instrument, e.g., environment variables for exporter endpoint, resource attributes), the Operator sees the annotation attached to deployments. It will then automatically attach the OTel Java agent using the given configuration.
 
 2.  You can look at the `Instrumentation` configuration using:
     ```bash

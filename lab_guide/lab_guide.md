@@ -1315,6 +1315,7 @@ If actuator transactions continue to appear after creating the exclusion rule:
 * **Agent Restart**: In some cases, you may need to restart the agent for changes to take effect
 * **Check Controller Sync**: Verify the agent has synchronized with the controller by checking the Agent Status
 
+> [!TIP]
 > **Why Not Just Delete Transactions?**
 >
 > This is a good question. Deleting business transactions without an exclusion rule only provides a temporary solution. Here's why:

@@ -34,9 +34,9 @@
    - [Log Observer Connect](#log-observer-connect)
    - [Health Rules](#health-rule-creation)
    - [Business Transactions](#business-transaction-detection--refinement)
+   - [Backend Detection Rules](#backend-detection-rules)
 7. [Advanced Configuration](#advanced-configuration)
    - [OpenTelemetry Integration](#adding-opentelemetry)
-   - [Backend Detection Rules](#backend-detection-rules)
 8. [Lab Guide Summary](#lab-guide-summary)
    - [What You've Accomplished](#what-youve-accomplished)
    - [Key Takeaways](#key-takeaways)
@@ -1171,20 +1171,48 @@ To ensure your business transaction is properly configured and monitored:
 ============================================================================
 -->
 
-### Troubleshooting Tips
+> **Troubleshooting Tips**
+>
+> If your new business transaction doesn't appear:
+>
+> * **Check the class and method names**: Ensure they exactly >match what's in your application code
+> * **Generate traffic**: Background operations may run on a schedule - wait long enough for them to execute
+> * **Verify agent connectivity**: Check that the agent is > online and communicating with the controller
+> * **Examine logs**: Look for any errors in the agent logs  related to POJO instrumentation
+> * **Check rule priority**: If you have conflicting rules,  ensure your new rule has appropriate priority
+>
+> If the transaction appears but doesn't collect data:
+>
+> * **Method execution frequency**: Some background methods execute rarely - verify the execution schedule
+> * **Method signature mismatch**: Confirm the exact method signature (parameters, return type)
+>
 
-If your new business transaction doesn't appear:
+----
 
-* **Check the class and method names**: Ensure they exactly match what's in your application code
-* **Generate traffic**: Background operations may run on a schedule - wait long enough for them to execute
-* **Verify agent connectivity**: Check that the agent is online and communicating with the controller
-* **Examine logs**: Look for any errors in the agent logs related to POJO instrumentation
-* **Check rule priority**: If you have conflicting rules, ensure your new rule has appropriate priority
+### Renaming Business Transactions
 
-If the transaction appears but doesn't collect data:
+While the auto-discovered Business Transaction names might be good for a more technical audience, sometimes it would be useful to have a more "speaking" name. While you could change your BT detection rules, there is a more elegant solution available by renaming the BT while keeping its original name. This way you can satisfy technical and non-technical users.
 
-* **Method execution frequency**: Some background methods execute rarely - verify the execution schedule
-* **Method signature mismatch**: Confirm the exact method signature (parameters, return type)
+1.  Select the Business Transaction you want to rename from the Business Transactions list.
+2.  Right-click on the Business Transaction.
+
+![Install Agent - Summary](img/image075.png)
+*Image 75: Business Transaction list with a BT right-clicked.*
+3.  Select **"Rename"** from the context menu.
+4.  Enter a more friendly or descriptive name in the dialog box.
+![Install Agent - Summary](img/image076.png)
+*Image 76: Rename Business Transaction dialog box.*
+
+5.  Click **Rename**.
+    This will have an immediate effect and will update the Business Transaction view.
+6.  To see both the new display name and the original auto-discovered name, select **"View Options"** (often a gear icon or dropdown in the BT list view).
+7.  Select **"Original Name"** (or a similar option to show original/internal names).
+    ![Install Agent - Summary](img/image077.png)
+    *Image 77: View Options menu with "Original Name" selected*
+
+    This now will show both names in the BT UI, providing clarity for different user perspectives.
+![Install Agent - Summary](img/image078.png)
+*Image 78: Business Transaction list showing both display name and original name*
 
 -----
 
@@ -1287,17 +1315,17 @@ If actuator transactions continue to appear after creating the exclusion rule:
 * **Agent Restart**: In some cases, you may need to restart the agent for changes to take effect
 * **Check Controller Sync**: Verify the agent has synchronized with the controller by checking the Agent Status
 
-### Why Not Just Delete Transactions?
-
-This is a good question. Deleting business transactions without an exclusion rule only provides a temporary solution. Here's why:
-
-* If an agent discovers that business transaction again after deletion, it will be re-created
-* Deleting a BT will solve the problem temporarily, but the transaction will reappear when the endpoint is called again
-* Only exclusion rules ensure that these entry points will be permanently ignored
-
-Using a combination of exclusion rules and deletion provides the most effective solution:
-* **Exclusion rule**: Prevents future detection
-* **Deletion**: Cleans up existing transactions
+> **Why Not Just Delete Transactions?**
+>
+> This is a good question. Deleting business transactions without an exclusion rule only provides a temporary solution. Here's why:
+>
+> * If an agent discovers that business transaction again after deletion, it will be re-created
+> * Deleting a BT will solve the problem temporarily, but the transaction will reappear when the endpoint is called again
+> * Only exclusion rules ensure that these entry points will be permanently ignored
+>
+> Using a combination of exclusion rules and deletion provides the most effective solution:
+> * **Exclusion rule**: Prevents future detection
+> * **Deletion**: Cleans up existing transactions
 
 ### Additional Information
 
@@ -1643,104 +1671,6 @@ Refer to the official documentation for more details:
 
 -----
 
-## Adding OpenTelemetry
-
-OpenTelemetry is a collection of tools, APIs, and SDKs used to instrument, generate, collect, and export telemetry data (metrics, logs, and traces) to help you analyze software performance and behavior.
-Splunk AppDynamics provides an OpenTelemetry-compatible backend to ingest OpenTelemetry trace data using OpenTelemetry components. The ingested data is processed by the Splunk AppDynamics backend and displayed in the Controller UI. This service is referred to as Splunk AppDynamics for OpenTelemetry.
-
-In this lab, we're going to instrument the pods in the `notification` namespace and the `visits-service` with OpenTelemetry, as these services might be handled by another vendor which does not allow the use of an AppDynamics agent. Still, we would like to get end-to-end visibility in the backend.
-
-### `visits-service` with OpenTelemetry
-
-If you have an application that is monitored with Splunk AppDynamics Java, .NET, or Node.js Agents, you can instrument Splunk AppDynamics agents in your application to report both OpenTelemetry span data and Splunk AppDynamics SaaS data. When instrumented, the agents will generate OpenTelemetry span data from HTTP entry and exit requests.
-
-#### Enable OpenTelemetry in the Java Agent
-
-This can be done by adding some command line parameters when starting the `visits-service`.
-
-1.  The following parameters need to be added to the Java startup command:
-    ```bash
-    -Dappdynamics.opentelemetry.enabled=true \
-    -Dagent.deployment.mode=hybrid \
-    -Dotel.traces.exporter=otlp \
-    -Dotel.metrics.exporter=otlp \
-    -Dotel.resource.attributes="service.name=visits-service,service.namespace=Petclinic-X" \
-    -Dotel.exporter.otlp.traces.endpoint=http://collector:4317 \
-    -Dotel.exporter.otlp.metrics.endpoint=http://collector:4317
-    ```
-2.  **Important**: Change `Petclinic-X` in `service.namespace=Petclinic-X` to the value of your group/student ID.
-3.  Modify the `run.sh.loc.otel` startup script (or create one based on `run.sh.loc`) for the `visits-service` to include these attributes.
-4.  Verify if your `visits-service` can reach the OTel collector's DNS name. If the collector is in a different namespace (e.g., `splunk` or `notification`), the endpoint might need to be fully qualified (e.g., `http://otel-collector.splunk.svc.cluster.local:4317` or `http://otel-collector.notification.svc.cluster.local:4317`). You can test with:
-    ```bash
-    ping collector # Or the FQDN of your collector
-    ```
-5.  Restart the `visits-service` using your modified script:
-    ```bash
-    ./run.sh.loc.otel
-    ```
-    *(Ensure any previous instance is stopped first.)*
-
-#### Verification
-
-1.  In the AppDynamics Controller, a new application named **Petclinic-X\_otel** (where `X` is your group/student ID) should be created. This might take some time.
-2.  Navigate to that application – **Tiers & Nodes** and verify if the `visits-service` shows up as an OTel Tier.
-![Install Agent - Summary](img/image069.png)
-*Image 69: AppDynamics UI showing Petclinic-X\_otel application with visits-service as an OTel Tier*
-
-This configuration will instruct the AppDynamics Agent to also start using OpenTelemetry. It will create OTel traces, which will be sent to downstream systems. We also instruct the agent to send all OTel data to an OpenTelemetry Collector (which might be running in the `notification` service namespace or a dedicated `splunk` namespace) which is already configured to send the data to the backend.
-
-### Notification services with OpenTelemetry
-
-#### Verify and Update the OTel Collector Configuration 
-
-This step assumes an OpenTelemetry Collector is deployed, possibly in the `notification` namespace or a central `splunk` namespace. If you deployed one with Helm earlier, its configuration might be in the `values.yaml` or a separate ConfigMap. For this lab, we assume a ConfigMap `otel-collector-config-map.yaml` might exist or needs adjustment.
-
-1.  Ensure the OTel Collector's configuration correctly sets the `service.namespace` attribute for data originating from the `notification` services. If you are editing a ConfigMap for a collector that specifically serves the `notification` namespace, you might add or modify a processor to set this.
-    Example snippet for a processor in an OTel Collector ConfigMap:
-    ```yaml
-    processors:
-      resource:
-        attributes:
-          - key: service.namespace
-            value: Petclinic-X # Change Petclinic-X to your value
-            action: insert
-    # ... other processor configurations
-    ```
-2.  If you modified a ConfigMap (e.g., `notification-service/otel-collector-config-map.yaml`), apply it and restart the collector:
-    ```bash
-    # Example if the ConfigMap is applied from a file:
-    # kubectl apply -n notification -f notification-service/otel-collector-config-map.yaml
-    # kubectl -n notification rollout restart deployment otel-collector
-
-    # If using the Helm-deployed collector, you might need to update via Helm with a modified values.yaml
-    ```
-
-#### Auto-instrument the `notification-service` using OTel Operator
-
-This requires the OpenTelemetry Operator to be installed in your Kubernetes cluster.
-
-1.  Patch the `notification-service` deployment to inject the Java OTel agent automatically:
-    ```bash
-    kubectl -n notification patch deployment notification-service -p '{"spec":{"template":{"metadata":{"annotations":{"instrumentation.opentelemetry.io/inject-java":"true"}}}}}'
-    ```
-    *(You might need to specify which OpenTelemetry `Instrumentation` custom resource to use via another annotation if you have multiple, e.g., `instrumentation.opentelemetry.io/java-instrumentation: "my-java-instrumentation"`)*
-
-There is a lot of magic going on behind the scenes, which has been prepared in this lab. If you want to know more, feel free to ask.
-In essence, if the OTel Operator is installed in the k8s cluster and an `Instrumentation` custom resource is created (defining how to instrument, e.g., environment variables for exporter endpoint, resource attributes), the Operator sees the annotation attached to deployments. It will then automatically attach the OTel Java agent using the given configuration.
-
-2.  You can look at the `Instrumentation` configuration using:
-    ```bash
-    kubectl -n notification describe instrumentation # Or use the namespace where your Instrumentation CR is
-    ```
-
-#### Verification
-
-1.  As before, check in the **Petclinic-X\_otel** application in AppDynamics for a new tier, possibly named `notification-service` or similar, based on how `service.name` is set for its OTel data.
-![Install Agent - Summary](img/image070.png)
-*Image 70: Successful Auto-Instrumentation of the notification service.*
-
------
-
 <!-- 
 ============================================================================
                           BACKEND DETECTION RULES
@@ -1882,30 +1812,105 @@ discovery-server (15 calls/min, 223ms avg. response time)
 
 **Expected Outcome**: The naming configuration dropdown should now show "Host only" instead of "Host,Port".
 
-## Renaming Business Transactions
+-----
 
-While the auto-discovered Business Transaction names might be good for a more technical audience, sometimes it would be useful to have a more "speaking" name. While you could change your BT detection rules, there is a more elegant solution available by renaming the BT while keeping its original name. This way you can satisfy technical and non-technical users.
+## Adding OpenTelemetry
 
-1.  Select the Business Transaction you want to rename from the Business Transactions list.
-2.  Right-click on the Business Transaction.
+OpenTelemetry is a collection of tools, APIs, and SDKs used to instrument, generate, collect, and export telemetry data (metrics, logs, and traces) to help you analyze software performance and behavior.
+Splunk AppDynamics provides an OpenTelemetry-compatible backend to ingest OpenTelemetry trace data using OpenTelemetry components. The ingested data is processed by the Splunk AppDynamics backend and displayed in the Controller UI. This service is referred to as Splunk AppDynamics for OpenTelemetry.
 
-![Install Agent - Summary](img/image075.png)
-*Image 75: Business Transaction list with a BT right-clicked.*
-3.  Select **"Rename"** from the context menu.
-4.  Enter a more friendly or descriptive name in the dialog box.
-![Install Agent - Summary](img/image076.png)
-*Image 76: Rename Business Transaction dialog box.*
+In this lab, we're going to instrument the pods in the `notification` namespace and the `visits-service` with OpenTelemetry, as these services might be handled by another vendor which does not allow the use of an AppDynamics agent. Still, we would like to get end-to-end visibility in the backend.
 
-5.  Click **Rename**.
-    This will have an immediate effect and will update the Business Transaction view.
-6.  To see both the new display name and the original auto-discovered name, select **"View Options"** (often a gear icon or dropdown in the BT list view).
-7.  Select **"Original Name"** (or a similar option to show original/internal names).
-    ![Install Agent - Summary](img/image077.png)
-    *Image 77: View Options menu with "Original Name" selected*
+### `visits-service` with OpenTelemetry
 
-    This now will show both names in the BT UI, providing clarity for different user perspectives.
-![Install Agent - Summary](img/image078.png)
-*Image 78: Business Transaction list showing both display name and original name*
+If you have an application that is monitored with Splunk AppDynamics Java, .NET, or Node.js Agents, you can instrument Splunk AppDynamics agents in your application to report both OpenTelemetry span data and Splunk AppDynamics SaaS data. When instrumented, the agents will generate OpenTelemetry span data from HTTP entry and exit requests.
+
+#### Enable OpenTelemetry in the Java Agent
+
+This can be done by adding some command line parameters when starting the `visits-service`.
+
+1.  The following parameters need to be added to the Java startup command:
+    ```bash
+    -Dappdynamics.opentelemetry.enabled=true \
+    -Dagent.deployment.mode=hybrid \
+    -Dotel.traces.exporter=otlp \
+    -Dotel.metrics.exporter=otlp \
+    -Dotel.resource.attributes="service.name=visits-service,service.namespace=Petclinic-X" \
+    -Dotel.exporter.otlp.traces.endpoint=http://collector:4317 \
+    -Dotel.exporter.otlp.metrics.endpoint=http://collector:4317
+    ```
+2.  **Important**: Change `Petclinic-X` in `service.namespace=Petclinic-X` to the value of your group/student ID.
+3.  Modify the `run.sh.loc.otel` startup script (or create one based on `run.sh.loc`) for the `visits-service` to include these attributes.
+4.  Verify if your `visits-service` can reach the OTel collector's DNS name. If the collector is in a different namespace (e.g., `splunk` or `notification`), the endpoint might need to be fully qualified (e.g., `http://otel-collector.splunk.svc.cluster.local:4317` or `http://otel-collector.notification.svc.cluster.local:4317`). You can test with:
+    ```bash
+    ping collector # Or the FQDN of your collector
+    ```
+5.  Restart the `visits-service` using your modified script:
+    ```bash
+    ./run.sh.loc.otel
+    ```
+    *(Ensure any previous instance is stopped first.)*
+
+#### Verification
+
+1.  In the AppDynamics Controller, a new application named **Petclinic-X\_otel** (where `X` is your group/student ID) should be created. This might take some time.
+2.  Navigate to that application – **Tiers & Nodes** and verify if the `visits-service` shows up as an OTel Tier.
+![Install Agent - Summary](img/image069.png)
+*Image 69: AppDynamics UI showing Petclinic-X\_otel application with visits-service as an OTel Tier*
+
+This configuration will instruct the AppDynamics Agent to also start using OpenTelemetry. It will create OTel traces, which will be sent to downstream systems. We also instruct the agent to send all OTel data to an OpenTelemetry Collector (which might be running in the `notification` service namespace or a dedicated `splunk` namespace) which is already configured to send the data to the backend.
+
+### Notification services with OpenTelemetry
+
+#### Verify and Update the OTel Collector Configuration 
+
+This step assumes an OpenTelemetry Collector is deployed, possibly in the `notification` namespace or a central `splunk` namespace. If you deployed one with Helm earlier, its configuration might be in the `values.yaml` or a separate ConfigMap. For this lab, we assume a ConfigMap `otel-collector-config-map.yaml` might exist or needs adjustment.
+
+1.  Ensure the OTel Collector's configuration correctly sets the `service.namespace` attribute for data originating from the `notification` services. If you are editing a ConfigMap for a collector that specifically serves the `notification` namespace, you might add or modify a processor to set this.
+    Example snippet for a processor in an OTel Collector ConfigMap:
+    ```yaml
+    processors:
+      resource:
+        attributes:
+          - key: service.namespace
+            value: Petclinic-X # Change Petclinic-X to your value
+            action: insert
+    # ... other processor configurations
+    ```
+2.  If you modified a ConfigMap (e.g., `notification-service/otel-collector-config-map.yaml`), apply it and restart the collector:
+    ```bash
+    # Example if the ConfigMap is applied from a file:
+    # kubectl apply -n notification -f notification-service/otel-collector-config-map.yaml
+    # kubectl -n notification rollout restart deployment otel-collector
+
+    # If using the Helm-deployed collector, you might need to update via Helm with a modified values.yaml
+    ```
+
+#### Auto-instrument the `notification-service` using OTel Operator
+
+This requires the OpenTelemetry Operator to be installed in your Kubernetes cluster.
+
+1.  Patch the `notification-service` deployment to inject the Java OTel agent automatically:
+    ```bash
+    kubectl -n notification patch deployment notification-service -p '{"spec":{"template":{"metadata":{"annotations":{"instrumentation.opentelemetry.io/inject-java":"true"}}}}}'
+    ```
+    *(You might need to specify which OpenTelemetry `Instrumentation` custom resource to use via another annotation if you have multiple, e.g., `instrumentation.opentelemetry.io/java-instrumentation: "my-java-instrumentation"`)*
+
+There is a lot of magic going on behind the scenes, which has been prepared in this lab. If you want to know more, feel free to ask.
+In essence, if the OTel Operator is installed in the k8s cluster and an `Instrumentation` custom resource is created (defining how to instrument, e.g., environment variables for exporter endpoint, resource attributes), the Operator sees the annotation attached to deployments. It will then automatically attach the OTel Java agent using the given configuration.
+
+2.  You can look at the `Instrumentation` configuration using:
+    ```bash
+    kubectl -n notification describe instrumentation # Or use the namespace where your Instrumentation CR is
+    ```
+
+#### Verification
+
+1.  As before, check in the **Petclinic-X\_otel** application in AppDynamics for a new tier, possibly named `notification-service` or similar, based on how `service.name` is set for its OTel data.
+![Install Agent - Summary](img/image070.png)
+*Image 70: Successful Auto-Instrumentation of the notification service.*
+
+-----
 
 <!-- 
 ============================================================================

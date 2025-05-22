@@ -2055,6 +2055,7 @@ To build on what you've learned:
 2. **Expand Monitoring Coverage**:
    * Apply these techniques to other applications in your environment
    * Explore additional agent types for other technologies (NodeJS, .NET, etc.)
+   * Integrate with ThousandEyes to bring network monitoring data into Appdynamics
 
 3. **Integrate with CI/CD**:
    * Automate agent deployment as part of application deployments

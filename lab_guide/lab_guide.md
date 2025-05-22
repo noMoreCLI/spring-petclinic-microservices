@@ -146,6 +146,11 @@ The following software must be installed on your local machine:
 ### Setting Up the Lab Environment
 
 This section details the steps required to prepare the virtual machines for this lab. Execute these commands on **each** lab node:
+0. SSH as the Cisco User. You should also delete the existing `~/spring-petclinic-microservices` directory to pull the latest version.
+
+```bash
+ssh cisco@198.18.134.25
+```
 
 1. **Clone the Repository:**
    ```bash

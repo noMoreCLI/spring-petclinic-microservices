@@ -626,10 +626,10 @@ Click the **Next** button at the bottom of the page to proceed.
 
 ### Step 4: Configure Java Agent App and Tier Settings
 
-Configure your JAVA agent application App Name name similar to the below utilizing your student number – `Petclinic-X`. For the tier name use `visits-service`
+Configure your JAVA agent application App Name name similar to the below utilizing your student number – `Petclinic-X`. For the tier name use `visits-service-x` and `visits-service-x` for the node name.
 
 ![Install Agent - Configure App and Tier](img/image010.png)
-*Image 10: Install Agent wizard - Configure Application and Tier names.*
+*Image 10: Install Agent wizard - Configure Application,Tier and Node names.*
 
 ### Step 5: Configure Java Agent Settings
 

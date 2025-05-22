@@ -328,21 +328,21 @@ The last service to be started is the legacy visits service running on its dedic
 ### Navigate to the UI
 
 All application services are up and running after 1-2 minutes. You should be able to navigate to the main application: 
+[http://198.18.134.23:8080/#!/welcome](http://198.18.134.23:8080/#!/welcome)
 
-```
-http://198.18.134.23:8080/#!/welcome
-```
 
 ![Petclinic Welcome Page](img/image004.png)
 *Image 4: Petclinic Welcome Page with Developer Tools open*
 
-Please note, the GenAI service (chatbot) is not operational in this lab. You can safely ignore it and all errors associated with it.
+Please note, the GenAI service (chatbot) is not operational in this lab. You can safely ignore it and all errors associated with it. Still, we encourage you to type messages in the chatbot to create traffic and load on the different services.
 
 Feel free to browse the Application and familiarize yourself with it before proceeding.
 
 ---
 
-## Connecting to the Ansible Node
+## Installing AppDynamics Agents with Ansible
+
+### Connecting to the Ansible Node
 
 To execute Ansible playbooks and manage the lab environment, you'll need to establish an SSH connection to the designated Ansible node. Here's a general procedure:
 
@@ -357,10 +357,6 @@ To execute Ansible playbooks and manage the lab environment, you'll need to esta
    ```bash
    ssh cisco@198.18.134.22
    ```
-
----
-
-## Installing AppDynamics Agents with Ansible
 
 This section describes how to install the AppDynamics Cluster Agent, Smart Agent, and Machine Agent using a created Ansible playbook and SmartAgentCLI.
 

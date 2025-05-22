@@ -206,7 +206,7 @@ Once these steps are completed on all lab machines, the environment will be read
 >
 > Issue the command `kubectl get nodes`
 >
-> if there is a stale `microk8s` node in state 'NotReady' you can remove it using `kubectle delete node microk8s'
+> if there is a stale `microk8s` node in state 'NotReady' you can remove it using `kubectl delete node microk8s'
 
 ---
 

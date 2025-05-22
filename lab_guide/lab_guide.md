@@ -109,6 +109,10 @@ The lab environment consists of the following nodes:
  **visits-service-x** | 198.18.134.24 | Java Application | Java, Maven/Gradle, Spring Boot App |
  **petclinic-db-x** | 198.18.134.25 | Database Server | MySQL |
 
+### Application Service Diagram
+![Microservices Architecture Diagram](https://github.com/noMoreCLI/spring-petclinic-microservices/blob/cl25us/docs/microservices-architecture-diagram.jpg?raw=true)
+The "Microservices Architecture Diagram" visually represents the structure of the Spring Petclinic microservices application. It illustrates how various independent services—such as the API Gateway, Customers Service, Vets Service, Visits Service, and others—interact with each other. The diagram typically shows the flow of requests from clients through the API Gateway to the backend services, as well as the connections to supporting components like databases and configuration servers. This architecture highlights the modular, scalable, and loosely coupled nature of the microservices approach, enabling easier maintenance and independent deployment of each service.
+
 ### Prerequisites
 
 #### Required Knowledge

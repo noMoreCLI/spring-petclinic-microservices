@@ -163,25 +163,25 @@ This section details the steps required to prepare the virtual machines for this
 
    * **Ansible Setup:**
      ```bash
-     cd spring-petclinic-microservices/deployment/hybrid/setup/ansible
+     cd spring-petclinic-microservices/deployments/hybrid/setup/ansible
      sudo ./setup.sh
      ```
    
    * **MicroK8s Setup:**
      ```bash
-     cd spring-petclinic-microservices/deployment/hybrid/setup/microk8s
+     cd spring-petclinic-microservices/deployments/hybrid/setup/microk8s
      sudo ./setup.sh
      ```
    
    * **MySQL Setup:**
      ```bash
-     cd spring-petclinic-microservices/deployment/hybrid/setup/mysql
+     cd spring-petclinic-microservices/deployments/hybrid/setup/mysql
      sudo ./setup.sh
      ```
    
    * **Visits Service Setup:**
      ```bash
-     cd spring-petclinic-microservices/deployment/hybrid/setup/visits-service
+     cd spring-petclinic-microservices/deployments/hybrid/setup/visits-service
      sudo ./setup.sh
      ```
    

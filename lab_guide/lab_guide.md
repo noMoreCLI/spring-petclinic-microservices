@@ -617,7 +617,7 @@ From the agent selection wizard, select **Java Agent**.
 
 ### Step 3: Select Target Host
 
-From the dropdown menu, select the `visits-service` host where SmartAgent is already installed.
+From the dropdown menu, select the `visits-service-x` host where SmartAgent is already installed.
 Click the apply button to proceed with additional configurations.
 Click the **Next** button at the bottom of the page to proceed.
 

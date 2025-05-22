@@ -449,7 +449,7 @@ The inventory file is a good example for how to build file for multiple hosts.
 
 1.  Navigate to `appdcli/` directory.
 2.  Run the `./install-script.sh` with sudo.
-3.  Verify file permissions if error. You make need to `chmod +x install-script.sh`
+3.  Verify file permissions if error. You might need to `chmod +x install-script.sh`
 
 **Bulk Installation Scripts and Understanding the SmartAgentCLI tool:**
 

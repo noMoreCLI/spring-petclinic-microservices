@@ -372,6 +372,8 @@ This section describes how to install the AppDynamics Cluster Agent, Smart Agent
    vi vars/secrets.yaml
    ```
 
+   You need to change the variable app_name to match your StudentID
+
 ### Understanding the Cluster Agent Configuration on Microk8s
 
 In order to install and configure the cluster agent we needed to define our helm chart values file. Below you will find that file explained for the different options that we have enabled for the lab. Spend some time to understand the different settings that were required. Feel free to ask us any question you may have. The file being explained is `cluster-agent/cluster-agent-values.yaml.j2`. Jinja files are templates used by the Jinja templating engine, primarily in Python applications. Think of them as blueprints for text-based formats like HTML, XML, or in our case .yaml configuration files.

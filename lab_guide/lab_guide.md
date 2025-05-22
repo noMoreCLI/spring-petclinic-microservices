@@ -473,6 +473,7 @@ Execute the following scripts. You may need to make the files executable with `c
     ```
     The only difference for this step is that we are using a different group within the Ansible inventory file. Take a look at the inventory file to understand how we created the groups, as well as any inventory variables that we needed to configure to make SmartAgentCLI successful in running the playbooks.
     * `-m machineagent`: This is referring to a group within the ansible inventory file. Be sure to take a look at the inventory file to understand how we have that configured as well the different variable options that we put in place.
+    * `--extra-vars "agent_version=25.1.0.4532"`: This is referring to selecting the version. As part of the lab you will initiate an upgrade through the GUI so this is not the latest version. 
 
 ### Post-Installation Verification
 

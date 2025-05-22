@@ -156,7 +156,7 @@ This section details the steps required to prepare the virtual machines for this
 
 1. **Clone the Repository:**
    ```bash
-   git clone git@github.com:noMoreCLI/spring-petclinic-microservices.git
+   git clone https://github.com/noMoreCLI/spring-petclinic-microservices.git -b cl25us   
    ```
 
 2. **Navigate to Setup Directories and Execute Scripts:**

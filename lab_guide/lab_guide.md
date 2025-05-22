@@ -663,7 +663,7 @@ Hit **Next** to review your configuration and finally **Submit** the agent insta
 
 -----
 
-## Installing DB Using Appd GUI
+## Installing DB Agent Using Appd GUI
 
 ### Objective
 

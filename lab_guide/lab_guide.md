@@ -147,16 +147,27 @@ The following software must be installed on your local machine:
 
 This section details the steps required to prepare the virtual machines for this lab. Execute these commands on **each** lab node:
 
+> [!TIP]
+> SSH as the Cisco User. You should also delete the existing `~/spring-petclinic-microservices` directory to pull the latest version.
+>```bash
+>ssh cisco@198.18.134.25
+>rm -rf /home/cisco/spring-petclinic-microservices
+>```
+
+> [!TIP]
+> SSH as the Cisco User. You should also delete the existing `~/spring-petclinic-microservices` directory to pull the latest version.
+>```bash
+>ssh cisco@198.18.134.25
+>rm -rf /home/cisco/spring-petclinic-microservices
+>```
+
 1. **Connect**
   
    Logging into the all nodes using the user `cisco` with the provided password.  
 
 2. **Clone the Repository:**
    ```bash
-   cd spring-petclinic-microservices
-   git pull
-   # if there is no spring-petrclinic-microservices directory clone the repo instead
-   # git clone git@github.com:noMoreCLI/spring-petclinic-microservices.git
+   git clone https://github.com/noMoreCLI/spring-petclinic-microservices.git -b cl25us   
    ```
 
 3. **Navigate to Setup Directories and Execute Scripts:**
@@ -468,7 +479,7 @@ The inventory file is a good example for how to build file for multiple hosts.
 
 1.  Navigate to `appdcli/` directory.
 2.  Run the `./install-script.sh` with sudo.
-3.  Verify file permissions if error. You make need to `chmod +x install-script.sh`
+3.  Verify file permissions if error. You might need to `chmod +x install-script.sh`
 
 **Bulk Installation Scripts and Understanding the SmartAgentCLI tool:**
 
@@ -488,10 +499,11 @@ Execute the following scripts. You may need to make the files executable with `c
 
 * **`bulk-install-ma.sh`**: Machine Agent installation
     ```bash
-    sudo ./appd install machine -i inventory --auto-start -q ssh -m machineagent
+    sudo ./appd install machine -i inventory --auto-start -q ssh -m machineagent --extra-vars "agent_version=25.1.0.4532"
     ```
     The only difference for this step is that we are using a different group within the Ansible inventory file. Take a look at the inventory file to understand how we created the groups, as well as any inventory variables that we needed to configure to make SmartAgentCLI successful in running the playbooks.
     * `-m machineagent`: This is referring to a group within the ansible inventory file. Be sure to take a look at the inventory file to understand how we have that configured as well the different variable options that we put in place.
+    * `--extra-vars "agent_version=25.1.0.4532"`: This is referring to selecting the version. As part of the lab you will initiate an upgrade through the GUI so this is not the latest version. 
 
 ### Post-Installation Verification
 
@@ -681,7 +693,7 @@ Hit **Next** to review your configuration and finally **Submit** the agent insta
 
 -----
 
-## Installing DB Using Appd GUI
+## Installing DB Agent Using Appd GUI
 
 ### Objective
 

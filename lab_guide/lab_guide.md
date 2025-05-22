@@ -692,9 +692,11 @@ Hit **Next** to review your configuration and finally **Submit** the agent insta
     [AD Agent init] Wed May 07 16:52:01 UTC 2025[INFO]: JavaAgent - Agent conf directory set to [/opt/appdynamics/java-agent/ver25.3.0.36936/conf]
     ```
 
+
 > [!WARNING]
 >
 > If you don't see the log messages from the agent, make sure you're using a new ssh session into the VM. The installation of SmartAgent and JavaAgent has altered some env variables and configurations which will not automatically be pushed into existing sessions
+
 
 -----
 
@@ -736,6 +738,15 @@ From the agent selection wizard, select **Database Agent**.
 ![Install Agent - Summary](img/image017.png)
 *Image 17: Changing the agent settings to match the lab environment*
 Once the install has finished you'll be able to find your DB Agent you just installed. We now need to configure it as a collector for the application.
+
+> [!TIP]
+> IF the database agent does not show up in the UI but the task completed successfully, check on the petclinic-db directly:
+> 
+> - is the agent installed in `/opt/appdynamics/db-agent`
+> - check the configuration in `/opt/appdynamics/db-agent/conf/controller-info.xml` to see if the setting `<controller-ssl-enabled>true</controller-ssl-enabled>` is set to true
+> - check the logs `/opt/appdynamics/db-agent/logs/agent.log`
+> - restart the DB agent
+
 
 ### Step 4: Configure Database Collector
 

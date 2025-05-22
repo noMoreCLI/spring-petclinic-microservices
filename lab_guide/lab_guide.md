@@ -435,6 +435,12 @@ This section configures the automatic instrumentation of applications running in
         * `matchString: ".*"`: This is a broad regular expression that will match all containers within the specified namespaces.
         * `imageInfo:`: Overrides the default `imageInfo` for this specific rule, using the same Java agent image, mount path, and pull policy as defined above.
 
+
+3. Run the ansible playbook and install the cluster agent 
+```bash
+ansible-playbook -i inventory.ini cluster-agent-install.yaml
+```
+
 ### Use SmartAgentCLI for Agent Installation
 
 AppDynamics provides pre-written Ansible playbooks in the form a linux binary for simplified agent deployment. These playbooks are provided with SmartAgentCLI tool.

@@ -150,6 +150,7 @@ This section details the steps required to prepare the virtual machines for this
 
 ```bash
 ssh cisco@198.18.134.25
+rm -rf /home/cisco/spring-petclinic-microservices
 ```
 
 1. **Clone the Repository:**

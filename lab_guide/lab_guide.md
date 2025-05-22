@@ -199,6 +199,15 @@ This section details the steps required to prepare the virtual machines for this
 
 Once these steps are completed on all lab machines, the environment will be ready for Splunk AppDynamics integration.
 
+> [!NOTE]
+> All hostnames should have now your studentID as a suffix. 
+> 
+> On the microk8s node:
+>
+> Issue the command `kubectl get nodes`
+>
+> if there is a stale `microk8s` node in state 'NotReady' you can remove it using `kubectle delete node microk8s'
+
 ---
 
 ## Starting the Application

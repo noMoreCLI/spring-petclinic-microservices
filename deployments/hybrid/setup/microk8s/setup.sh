@@ -65,6 +65,8 @@ persist_variable
 USER_NAME="${USER_NAME:-cisco}"
 USER_PASSWORD="${USER_PASSWORD:-REVOKED_SSH_PASSWORD}"
 ROOT_PASSWORD="${ROOT_PASSWORD:-REVOKED_SSH_PASSWORD}"
+echo "Removing existing microk8s installation"
+snap remove microk8s --purge
 echo "Setting Hostname microk8s-${STUDENT_ID}"
 hostnamectl set-hostname "microk8s-${STUDENT_ID}"
 

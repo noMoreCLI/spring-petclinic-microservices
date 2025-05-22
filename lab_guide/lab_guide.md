@@ -154,23 +154,12 @@ This section details the steps required to prepare the virtual machines for this
 >rm -rf /home/cisco/spring-petclinic-microservices
 >```
 
-> [!TIP]
-> SSH as the Cisco User. You should also delete the existing `~/spring-petclinic-microservices` directory to pull the latest version.
->```bash
->ssh cisco@198.18.134.25
->rm -rf /home/cisco/spring-petclinic-microservices
->```
-
-1. **Connect**
-  
-   Logging into the all nodes using the user `cisco` with the provided password.  
-
-2. **Clone the Repository:**
+1. **Clone the Repository:**
    ```bash
    git clone https://github.com/noMoreCLI/spring-petclinic-microservices.git -b cl25us   
    ```
 
-3. **Navigate to Setup Directories and Execute Scripts:**
+2. **Navigate to Setup Directories and Execute Scripts:**
 
    For all setups, use your assigned StudentID (example 99). Keep that ID handy, as you will be required to use it in subsequent steps.
 
@@ -200,12 +189,12 @@ This section details the steps required to prepare the virtual machines for this
    
    **Note:** You will be prompted for your sudo password when executing these scripts.
 
-4. **Reboot the Nodes:**
+3. **Reboot the Nodes:**
    ```bash
    sudo reboot
    ```
 
-5. **Reconnect via SSH:**
+4. **Reconnect via SSH:**
    After the nodes restart, re-establish your SSH connection to each one before proceeding with the lab exercises.
 
 Once these steps are completed on all lab machines, the environment will be ready for Splunk AppDynamics integration.

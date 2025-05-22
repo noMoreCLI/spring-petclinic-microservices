@@ -367,7 +367,10 @@ This section describes how to install the AppDynamics Cluster Agent, Smart Agent
    cd ~/spring-petclinic-microservices/cluster-agent/
    ```
 
-2. Edit the variables for your environment
+2. Edit the variables for your environment in `vars/secrets.yaml`
+   ```bash
+   vi vars/secrets.yaml
+   ```
 
 ### Understanding the Cluster Agent Configuration on Microk8s
 

@@ -149,14 +149,10 @@ This section details the steps required to prepare the virtual machines for this
 
 > [!TIP]
 > 0. SSH as the Cisco User. You should also delete the existing `~/spring-petclinic-microservices` directory to pull the latest version.
-
-
-
-
-```bash
-ssh cisco@198.18.134.25
-rm -rf /home/cisco/spring-petclinic-microservices
-```
+>```bash
+>ssh cisco@198.18.134.25
+>rm -rf /home/cisco/spring-petclinic-microservices
+>```
 
 1. **Clone the Repository:**
    ```bash

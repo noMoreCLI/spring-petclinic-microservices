@@ -147,45 +147,54 @@ The following software must be installed on your local machine:
 
 This section details the steps required to prepare the virtual machines for this lab. Execute these commands on **each** lab node:
 
-1. **Clone the Repository:**
+1. **Connect**
+  
+   Logging into the all nodes using the user `cisco` with the provided password.  
+
+2. **Clone the Repository:**
    ```bash
-   git clone git@github.com:noMoreCLI/spring-petclinic-microservices.git
+   cd spring-petclinic-microservices
+   git pull
+   # if there is no spring-petrclinic-microservices directory clone the repo instead
+   # git clone git@github.com:noMoreCLI/spring-petclinic-microservices.git
    ```
 
-2. **Navigate to Setup Directories and Execute Scripts:**
+3. **Navigate to Setup Directories and Execute Scripts:**
+
+   For all setups, use your assigned StudentID (example 99). Keep that ID handy, as you will be required to use it in subsequent steps.
 
    * **Ansible Setup:**
      ```bash
-     cd spring-petclinic-microservices/deployment/hybrid/setup/ansible
+     cd ~/spring-petclinic-microservices/deployments/hybrid/setup/ansible
      sudo ./setup.sh
      ```
    
    * **MicroK8s Setup:**
      ```bash
-     cd spring-petclinic-microservices/deployment/hybrid/setup/microk8s
+     cd ~/spring-petclinic-microservices/deployments/hybrid/setup/microk8s
      sudo ./setup.sh
      ```
    
    * **MySQL Setup:**
      ```bash
-     cd spring-petclinic-microservices/deployment/hybrid/setup/mysql
+     cd ~/spring-petclinic-microservices/deployments/hybrid/setup/mysql
      sudo ./setup.sh
      ```
    
    * **Visits Service Setup:**
      ```bash
-     cd spring-petclinic-microservices/deployment/hybrid/setup/visits-service
+     cd ~/spring-petclinic-microservices/deployments/hybrid/setup/visits-service
      sudo ./setup.sh
      ```
    
    **Note:** You will be prompted for your sudo password when executing these scripts.
 
-3. **Reboot the Nodes:**
+4. **Reboot the Nodes:**
    ```bash
    sudo reboot
    ```
 
-4. **Reconnect via SSH:**
+5. **Reconnect via SSH:**
    After the nodes restart, re-establish your SSH connection to each one before proceeding with the lab exercises.
 
 Once these steps are completed on all lab machines, the environment will be ready for Splunk AppDynamics integration.

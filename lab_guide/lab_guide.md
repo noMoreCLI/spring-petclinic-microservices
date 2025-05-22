@@ -148,7 +148,7 @@ The following software must be installed on your local machine:
 This section details the steps required to prepare the virtual machines for this lab. Execute these commands on **each** lab node:
 
 > [!TIP]
-> 0. SSH as the Cisco User. You should also delete the existing `~/spring-petclinic-microservices` directory to pull the latest version.
+> SSH as the Cisco User. You should also delete the existing `~/spring-petclinic-microservices` directory to pull the latest version.
 >```bash
 >ssh cisco@198.18.134.25
 >rm -rf /home/cisco/spring-petclinic-microservices

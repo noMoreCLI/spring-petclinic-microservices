@@ -889,7 +889,7 @@ By following these steps, you should be able to determine if the AppDynamics BRU
 
 ### Create a BRUM Application in AppDynamics ⚙️
 
-To get a proper configuration for the ADRUM agent (see [AppDynamics Docs](https://docs.appdynamics.com/appd/24.x/latest/en/end-user-monitoring/browser-monitoring/browser-real-user-monitoring/set-up-and-access-browser-rum)), you can navigate to the AppDynamics controller and log in with your pod's credentials.
+In the previous section you found out, that the agent in present but not configured. To get a proper configuration for the ADRUM agent (see [AppDynamics Docs](https://docs.appdynamics.com/appd/24.x/latest/en/end-user-monitoring/browser-monitoring/browser-real-user-monitoring/set-up-and-access-browser-rum)), you can navigate to the AppDynamics controller and log in with your pod's credentials.
 
 #### Step 1: Create a new BRUM Application
 
@@ -941,9 +941,9 @@ In this lab, we will modify the WebApplication directly.
     kubectl -n petclinic get cm
     ```
 ![Install Agent - Summary](img/image030.png)
-*Image 30: Looking to see what configuration maps are present in the system.*
+*Image 30: Discovering what configuration maps are present in the system.*
 
-    You can see that there is a ConfigMap called `agent-cm` which we prepared for you.
+    You can see that there is a ConfigMap called `agent-cm`, which we prepared for you.
 3.  Using `kubectl -n petclinic describe cm agent-cm`, we can see the current configuration.
     This script is already loaded when you access the Petclinic application; it renders the "agent.js loaded" string in the console you observed earlier. As the `adrum` agent is already loaded but missing its configuration, we're going to add the configuration into this script.
 

@@ -199,7 +199,7 @@ This section details the steps required to prepare the virtual machines for this
 
 Once these steps are completed on all lab machines, the environment will be ready for Splunk AppDynamics integration.
 
-> [!NOTE]
+> [!IMPORTANT]
 > All hostnames should have now your studentID as a suffix. 
 > 
 > On the microk8s node:
@@ -235,6 +235,12 @@ It is important to start up the application components in the right order. There
 
 
 > [!TIP]
+>
+> To see the container running use the command:
+>   ```bash
+>   docker ps
+>   ```
+>
 > To see the logs, you can issue the command:
 >   ```bash
 >   docker-compose logs
@@ -280,7 +286,9 @@ It is important to start up the application components in the right order. There
    ![kubectl get pods -A output](img/image002.png)
    *Image 2: `kubectl get pods -A` output*
 
-   All pods should be in a running state. If they are not, either delete the pod or ask for help.
+> [!WARNING]
+>   All pods should be in a running state. If they are not, either delete the pod or ask for help.
+>
 
    ```bash
    kubectl get svc -n petclinic

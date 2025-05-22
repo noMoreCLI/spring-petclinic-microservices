@@ -534,7 +534,7 @@ Run this from the microk8s host as the ansible host does not have `kubectl` inst
 ## Bulk Upgrading Machine Agents 
 
 ### Objective
-In this section of the lab we are going to be upgrade our machine agent on the hosts `visits-service-x` and `petclinic-db-x`. In order to do this we are going to make use of the Upgrade feature built-in to the Appdynamics GUI. This makes upgrades incredibily easy to make, with just a few clicks can kick off AppD agent upgrades. 
+In this section of the lab, we are going to be upgrading our machine agent on the hosts `visits-service-x` and `petclinic-db-x`. In order to do this, we are going to make use of the Upgrade feature built-in to the Appdynamics GUI. This makes upgrades incredibly easy to make; with just a few clicks, you can kick off AppD agent upgrades. You can only take advantage of this feature if you have the Splunk Appdynamics SmartAgent installed on the host.
 
 ### Prerequisites
 * Access to AppDynamics Controller

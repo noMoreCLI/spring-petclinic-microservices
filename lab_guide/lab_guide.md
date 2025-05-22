@@ -456,6 +456,7 @@ SmartAgentCLI in this lab will install:
 1.  Navigate to the `appdsm/` directory to configure the web server for agent distribution.
 2.  The `web-server.sh` script utilizes Python's built-in HTTP server to host agent files locally.
     ```bash
+    cd ~/spring-petclinic-microservices/appdsm/
     ./web-server.sh
     ```
     This provides a convenient way to distribute agent binaries within your network. The webserver will run in the background. You can test it with:
@@ -473,7 +474,7 @@ The inventory file is a good example for how to build file for multiple hosts.
 
 **Preparation:**
 
-1.  Navigate to `appdcli/` directory.
+1.  Navigate to `cd ~/spring-petclinic-microservices/appdcli/` directory.
 2.  Run the `./install-script.sh` with sudo.
 3.  Verify file permissions if error. You might need to `chmod +x install-script.sh`
 
@@ -554,6 +555,10 @@ From the AppDynamics Overview Page, locate and click on the **Agent Management**
 
 ![Agent Management - Highlighting Hosts to upgrade](img/image079.png)
 *Image 79: Agent Management screen with `visits-service-x` and `petclinic-db-x` highlighted. Waiting to be upgraded.*
+
+> [!TIP]
+>
+> To find your agents and hosts easier, use the search field and your `student-id` to prefilter your view
 
 1. To preform a bulk upgrade using the Appdynamics GUI, click the check box for your the respective hosts `visits-service-x` and `petclinic-db-x`. 
 

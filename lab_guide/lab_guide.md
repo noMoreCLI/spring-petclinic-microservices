@@ -758,10 +758,10 @@ Once the install has finished you'll be able to find your DB Agent you just inst
 > [!TIP]
 > IF the database agent does not show up in the UI but the task completed successfully, check on the petclinic-db directly:
 > 
-> - is the agent installed in `/opt/appdynamics/db-agent`
-> - check the configuration in `/opt/appdynamics/db-agent/conf/controller-info.xml` to see if the setting `<controller-ssl-enabled>true</controller-ssl-enabled>` is set to true
-> - check the logs `/opt/appdynamics/db-agent/logs/agent.log`
-> - restart the DB agent
+> - Is the agent installed in `/opt/appdynamics/db-agent`?
+> - Check the configuration in `/opt/appdynamics/db-agent/conf/controller-info.xml` to see if the setting `<controller-ssl-enabled>true</controller-ssl-enabled>` is set to true
+> - Check the logs `/opt/appdynamics/db-agent/logs/agent.log`
+> - Restart the DB agent
 
 
 ### Step 4: Configure Database Collector

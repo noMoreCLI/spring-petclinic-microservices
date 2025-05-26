@@ -1013,6 +1013,34 @@ The data sent typically includes:
 
 ---
 
+## Starting the LoadGenerator
+
+To have a continous load on the system, we included a loadgenerator in the lab. Follow these steps to get it started:
+
+1. SSH into the 'microk8s' node
+```bash
+  ssh cisco@198.18.134.23
+```
+
+2. Navigate into the microk8s deployment folder
+```bash
+  cd ~/spring-petclinic-microservices/deployments/hybrid/microk8s
+```
+
+3. Start the loadgenerator
+```bash
+  kubectl -n petclinic apply -f loadgen/
+```
+
+> [!TIP]
+>
+> Load is generate by a simple conjob which is executed regularly
+>
+> ```bash
+> kubectl -n petclinic get cronjob
+> ```
+---
+
 ## Health Rule Creation 
 
 Health rules in AppDynamics define what "normal" looks like for your environment by monitoring key metrics like response time, CPU usage, or error rates. When performance falls outside of defined thresholds, AppDynamics triggers a health rule violation, changing the status of the entity to **Warning**, **Critical**, **Normal**, or **Unknown**.

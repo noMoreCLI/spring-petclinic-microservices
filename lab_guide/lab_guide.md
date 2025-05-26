@@ -507,7 +507,7 @@ Execute the following scripts. You may need to make the files executable with `c
 
 * **`bulk-install-ma.sh`**: Machine Agent installation
     ```bash
-    sudo ./appd install machine -i inventory --auto-start -q ssh -m machineagent --extra-vars "agent_version=25.1.0.4532"
+   sudo ./appd install machine -i inventory --auto-start -q ssh -m machineagent --extra-vars "agent_version=25.1.0.4532" --extra-vars "sim_enabled=true"
     ```
     The only difference for this step is that we are using a different group within the Ansible inventory file. Take a look at the inventory file to understand how we created the groups, as well as any inventory variables that we needed to configure to make SmartAgentCLI successful in running the playbooks.
     * `-m machineagent`: This is referring to a group within the ansible inventory file. Be sure to take a look at the inventory file to understand how we have that configured as well the different variable options that we put in place.

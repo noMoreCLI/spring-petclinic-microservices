@@ -246,26 +246,27 @@ It is important to start up the application components in the right order. There
 
 
 > [!TIP]
+> Here are some useful commands and information for working with the container:
 >
-> To see the container running use the command:
->   ```bash
->   docker ps
->   ```
+> * **To see the container running:**
+>     ```bash
+>     docker ps
+>     ```
 >
-> To see the logs, you can issue the command:
->   ```bash
->   docker-compose logs
->   ```
->   
->   The MySQL port is exposed to the host using port 3306. If you want to see the DB initialization, you can find the SQL scripts applied on  container start here: `~/spring-petclinic-microservices/deployments/config/db`.
->   
->   The database comes with schema, sample data, users and everything else needed for the lab.>
+> * **To view the logs:**
+>     ```bash
+>     docker-compose logs
+>     ```
 >
-> For debugging purposes, you can connect to the MySQL DB from the DB  
-> server using:
->   ```bash
->   mysql -u root -P 3306 --protocol=tcp -h localhost -p petclinic
->   ```
+> * The MySQL port is exposed to the host on **port 3306**.
+>     If you want to see the DB initialization, you can find the SQL scripts applied on container start here: `~/spring-petclinic-microservices/deployments/config/db`.
+>
+> * The database comes with schema, sample data, users, and everything else needed for the lab.
+>
+> * **For debugging purposes, to connect to the MySQL DB from the DB server:**
+>     ```bash
+>     mysql -u root -P 3306 --protocol=tcp -h localhost -p petclinic
+>     ```
 
 
 ### Starting Services in Kubernetes

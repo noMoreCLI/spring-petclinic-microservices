@@ -29,9 +29,7 @@
    - [Use SmartAgentCLI for Agent Installation](#use-smartagentcli-for-agent-installation)
    - [Running Local Web-Server](#running-local-web-server)
    - [Agent Installation Process](#agent-installation-process)
-5. [Installing AppDynamics Agents](#installing-appdynamics-agents-with-ansible)
-   - [Cluster Agent Installation](#install-the-cluster-agent-on-microk8s)
-   - [Smart Agent Installation](#use-smartagentcli-for-agent-installation)
+5. [Installing Additional AppDynamics Agents](#installing-additional-appdynamics-agents)
    - [Java Agent Installation](#installing-java-agent-using-appd-gui)
    - [Database Agent Installation](#installing-db-agent-using-appd-gui)
    - [Bulk Upgrading Machine Agents](#bulk-upgrading-machine-agents)
@@ -41,15 +39,16 @@
    - [Business Transaction Detection & Refinement](#business-transaction-detection--refinement)
    - [Stop Detecting Business Transactions](#stop-detecting-business-transactions)
    - [Log Observer Connect](#log-observer-connect)
-7. [Enable Log Observer Connect in Kubernetes](#enable-log-observer-connect-in-kubernetes)
-8. [Backend Detection Rules](#backend-detection-rules)
-9. [Adding OpenTelemetry](#adding-opentelemetry)
-10. [Lab Guide Summary](#lab-guide-summary)
-    - [What You've Accomplished](#what-youve-accomplished)
-    - [Key Takeaways](#key-takeaways)
-    - [Real-World Application](#real-world-application)
-    - [Next Steps](#next-steps)
-    - [Resources for Further Learning](#resources-for-further-learning)
+   - [Starting the Load Generator](#starting-the-loadgenerator)
+   - [Enable Log Observer Connect in Kubernetes](#enable-log-observer-connect-in-kubernetes)
+   - [Backend Detection Rules](#backend-detection-rules)
+   - [Adding OpenTelemetry](#adding-opentelemetry)
+7. [Lab Guide Summary](#lab-guide-summary)
+   - [What You've Accomplished](#what-youve-accomplished)
+   - [Key Takeaways](#key-takeaways)
+   - [Real-World Application](#real-world-application)
+   - [Next Steps](#next-steps)
+   - [Resources for Further Learning](#resources-for-further-learning)
 
 <!-- 
 ============================================================================
@@ -1021,7 +1020,9 @@ The data sent typically includes:
 
 ## Starting the LoadGenerator
 
-To have a continous load on the system, we included a loadgenerator in the lab. Follow these steps to get it started:
+To have a continous load on the system, we included a loadgenerator in the lab. We have waited to start the loadgenerator until now because the loadgenerator will create BRUM sessions that will be recorded.
+
+Follow these steps to get it started:
 
 1. SSH into the 'microk8s' node
 ```bash

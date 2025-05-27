@@ -22,7 +22,7 @@
    - [Starting Services in Kubernetes](#starting-services-in-kubernetes)
    - [Starting Visits Service on the Java Node](#starting-visits-service-on-the-java-node)
    - [Navigate to the UI](#navigate-to-the-ui)
-4. [Installing AppDynamics SmartAgent and Cluser Agents](#installing-appdynamics-smartagent-and-cluser-agents)
+4. [Installing AppDynamics SmartAgent and Cluster Agents](#installing-appdynamics-smartagent-and-cluster-agents)
    - [Connecting to the Ansible Node](#connecting-to-the-ansible-node)
    - [Install the Cluster Agent on Microk8s](#install-the-cluster-agent-on-microk8s)
    - [Understanding the Cluster Agent Configuration on Microk8s](#understanding-the-cluster-agent-configuration-on-microk8s)
@@ -351,7 +351,7 @@ Feel free to browse the Application and familiarize yourself with it before proc
 
 ---
 
-## Installing AppDynamics SmartAgent and Cluser Agents 
+## Installing AppDynamics SmartAgent and Cluster Agents 
 
 ### Connecting to the Ansible Node
 

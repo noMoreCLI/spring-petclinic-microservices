@@ -110,10 +110,10 @@ The lab environment consists of the following nodes:
 
 | Node | IP Address | Role | Software Components |
 |------|------------|------|---------------------|
-| **ansible-x** | 198.18.134.22 | Automation Server | Ansible, AppdCLI, AppD Smartagent |
- **microk8s-x** | 198.18.134.23 | Kubernetes Server | MicroK8s |
- **visits-service-x** | 198.18.134.24 | Java Application | Java, Maven/Gradle, Spring Boot App |
- **petclinic-db-x** | 198.18.134.25 | Database Server | MySQL |
+| `ansible-x` | 198.18.134.22 | Automation Server | Ansible, AppdCLI, AppD Smartagent |
+ `microk8s-x` | 198.18.134.23 | Kubernetes Server | MicroK8s |
+ `visits-service-x` | 198.18.134.24 | Java Application | Java, Maven/Gradle, Spring Boot App |
+ `petclinic-db-x` | 198.18.134.25 | Database Server | MySQL |
 
 ### Application Service Diagram
 ![Microservices Architecture Diagram](https://github.com/noMoreCLI/spring-petclinic-microservices/blob/cl25us/docs/microservices-architecture-diagram.jpg?raw=true)

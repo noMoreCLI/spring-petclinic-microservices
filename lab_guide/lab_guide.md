@@ -711,7 +711,7 @@ Hit **Next** to review your configuration and finally **Submit** the agent insta
 
 > [!WARNING]
 >
-> If you don't see the log messages from the agent, make sure you're using a new ssh session into the VM. The installation of SmartAgent and JavaAgent has altered some env variables and configurations which will not automatically be pushed into existing sessions
+> If you don't see the log messages from the Appdynamics Java agent like the output above, make sure you're using a new ssh session into the VM. The installation of SmartAgent and JavaAgent has altered some env variables and configurations which will not automatically be pushed into existing sessions. 
 
 
 -----

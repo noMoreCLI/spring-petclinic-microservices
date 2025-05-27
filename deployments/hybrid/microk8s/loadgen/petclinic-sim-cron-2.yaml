@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: petclinic-sim-2-cm
+data:
+  example.spec.ts: |
+    import { test, expect } from '@playwright/test';
+
+    test('test', async ({ page }) => {
+      await page.goto('http://198.18.134.23:8080/#!/welcome');
+      await page.getByRole('textbox', { name: 'Type a message...' }).click();
+      await page.getByRole('textbox', { name: 'Type a message...' }).fill('I want to add a visit');
+      await page.getByRole('button', { name: 'Send' }).click();
+      await page.waitForTimeout(1000);
+      await page.getByRole('link', { name: ' Home' }).click();
+      await page.waitForTimeout(1000);
+      await page.getByRole('link', { name: ' Find owners' }).click();
+      await page.waitForTimeout(1000);
+      await page.getByRole('link', { name: 'Betty Davis' }).click();
+      await page.waitForTimeout(1000);
+      await page.getByRole('link', { name: 'Add Visit' }).click();
+      await page.waitForTimeout(1000);
+      await page.locator('textarea').click();
+      await page.waitForTimeout(1000);
+      await page.locator('textarea').fill('This is a sample visit added by synthetic testing');
+      await page.getByRole('button', { name: 'Add New Visit' }).click();
+      await page.waitForTimeout(1000);
+      await page.getByRole('link', { name: ' Home' }).click();
+      await page.waitForTimeout(1000);
+      await page.getByRole('link', { name: ' Find owners' }).click();
+      await page.waitForTimeout(1000);
+      await page.getByRole('link', { name: 'George Franklin' }).click();
+      await page.waitForTimeout(1000);
+      await page.getByRole('link', { name: 'Add Visit' }).click();
+      await page.waitForTimeout(1000);
+      await page.locator('textarea').click();
+      await page.waitForTimeout(1000);
+      await page.locator('textarea').fill('This is a sample visit added by synthetic testing');
+      await page.getByRole('button', { name: 'Add New Visit' }).click();
+      await page.waitForTimeout(1000);
+      await page.getByRole('link', { name: ' Home' }).click();
+      await page.waitForTimeout(1000);
+    });    
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: petclinic-sim-2
+spec:
+  schedule: "*/2 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: petclinic-sim-cronjob
+            image: marciokugler/petclinic-sim:latest
+            imagePullPolicy: IfNotPresent
+            volumeMounts:
+            - name: config-volume
+              mountPath: /app/tests/example.spec.ts
+              subPath: example.spec.ts
+              readOnly: true
+          restartPolicy: OnFailure
+          volumes:
+          - name: config-volume
+            configMap:
+              name: petclinic-sim-2-cm

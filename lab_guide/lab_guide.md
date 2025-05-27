@@ -312,10 +312,10 @@ It is important to start up the application components in the right order. There
 
    | Service Name     | Port |
    |------------------|------|
-   | Api-gateway      | 8080 |
-   | config-server    | 8888 |
-   | discovery-server | 8761 |
-   | customer-service | 8081 |
+   | `api-gateway`      | 8080 |
+   | `config-server`    | 8888 |
+   | `discovery-server` | 8761 |
+   | `customer-service` | 8081 |
 
 ### Starting Visits Service on the Java Node
 

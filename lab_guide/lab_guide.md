@@ -22,7 +22,7 @@
    - [Starting Services in Kubernetes](#starting-services-in-kubernetes)
    - [Starting Visits Service on the Java Node](#starting-visits-service-on-the-java-node)
    - [Navigate to the UI](#navigate-to-the-ui)
-4. [Installing AppDynamics Agents with Ansible](#installing-appdynamics-agents-with-ansible)
+4. [Installing AppDynamics SmartAgent and Cluser Agents](#installing-appdynamics-smartagent-and-cluser-agents)
    - [Connecting to the Ansible Node](#connecting-to-the-ansible-node)
    - [Install the Cluster Agent on Microk8s](#install-the-cluster-agent-on-microk8s)
    - [Understanding the Cluster Agent Configuration on Microk8s](#understanding-the-cluster-agent-configuration-on-microk8s)
@@ -34,7 +34,7 @@
    - [Database Agent Installation](#installing-db-agent-using-appd-gui)
    - [Bulk Upgrading Machine Agents](#bulk-upgrading-machine-agents)
 6. [Configuring Monitoring](#configuring-monitoring)
-   - [Browser Real User Monitoring (BRUM)](#installing-browser-real-user-monitoring-brum)
+   - [Installing Browser Real User Monitoring (BRUM)](#installing-browser-real-user-monitoring-brum)
    - [Health Rule Creation](#health-rule-creation)
    - [Business Transaction Detection & Refinement](#business-transaction-detection--refinement)
    - [Stop Detecting Business Transactions](#stop-detecting-business-transactions)
@@ -351,7 +351,7 @@ Feel free to browse the Application and familiarize yourself with it before proc
 
 ---
 
-## Installing AppDynamics Agents with Ansible
+## Installing AppDynamics SmartAgent and Cluser Agents 
 
 ### Connecting to the Ansible Node
 

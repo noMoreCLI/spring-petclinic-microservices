@@ -383,7 +383,11 @@ This section describes how to install the AppDynamics Cluster Agent, Smart Agent
    vi vars/secrets.yaml
    ```
 
-   You need to change the variable app_name to match your StudentID
+   You need to change the variable app_name to match your Petclinc-`X`, where X is your provided student number. 
+   ```yaml
+   # Application configuration
+   app_name: "Petclinic-1"
+   ```
 
 ### Understanding the Cluster Agent Configuration on Microk8s
 
@@ -475,7 +479,7 @@ SmartAgentCLI in this lab will install:
     curl 0:8000
     ```
     <span style="color: red">**NOTE:** THIS SCRIPT IS NOT PROVIDED BY APPD.
-    It was written for the lab to demonstrate accessing a webserver with the AppdCLI tool. We are making use of the built-in python `http.server` module and is a good tip and trick to keep in your back pocket should you ever need to host files within an internal environment. It is over port 80 so inherently insecure.</span>
+    It was written for the lab to demonstrate accessing a webserver with the AppdCLI tool. We are making use of the built-in python `http.server` module and is a good tip and trick to keep in your back pocket should you ever need to host files within an internal environment. It is over port 8000 so inherently insecure.</span>
 
 ### Agent Installation Process
 

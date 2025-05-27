@@ -1626,7 +1626,14 @@ Go ahead and navigate to the Splunk GUI and login using the provided UN and Pass
 ![Install Agent - Summary](img/image062.png) 
 *Image 62: Showing the Splunk Cloud GUI successfully receiving data from our UF*
 
-**You also need to add some additional output and verification from the ```splunk Cli```**
+> [!TIP]
+> Here are key Splunk Universal Forwarder (UF) commands to check its configuration and operational status. You will need to run these commands from the `/opt/splunkforwarder/bin` directory.
+> * **`splunk monitor list`**: Shows files and directories the UF is configured to monitor based on `inputs.conf`.
+> * **`splunk list inputstatus`**: Displays the real-time monitoring status of files, including current position and file size.
+> * **`splunk list forward-server`**: Lists the indexers (receivers) the UF is configured to forward data to.
+> * **`splunk btool inputs list --debug | grep "monitor://"`**: Provides a detailed, merged view of all `monitor://` stanzas from `inputs.conf` files, showing their origin.
+> * **`splunk btool outputs list --debug`**: Offers a detailed, merged view of the UF's forwarding configuration from `outputs.conf`.
+
 -----
 
 ### Configure Splunk AppDynamics Agents & Application

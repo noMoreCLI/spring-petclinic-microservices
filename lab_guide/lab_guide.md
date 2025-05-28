@@ -1644,7 +1644,7 @@ Complete
     host = visits-service-x
     ```
     You will find an inputs file in the Github repo.
-    Ensure `//home/cisco/spring-petclinic-microservices/deployments/hybrid/java/app.log` is the correct path to where the `visits-service-x` application log will be written after configuring logback. If you are utilizing our visit-service scripts then this is the location.
+    Ensure `/home/cisco/spring-petclinic-microservices/deployments/hybrid/java/app.log` is the correct path to where the `visits-service-x` application log will be written after configuring logback. If you are utilizing our visit-service scripts then this is the location.
     Place this `inputs.conf` in `/opt/splunkforwarder/etc/system/local/`.
 
     ```bash

@@ -1628,6 +1628,9 @@ Complete
     cp -r . /opt/splunkforwarder/etc/system/local/
     ```
     For this lab, we will specifically need to copy the `outputs.conf` from the extracted `splunkclouduf.spl` files. You'll also need an `inputs.conf` to tell the forwarder which files to monitor (e.g., `app.log` from the `visits-service`). An example `inputs.conf` looks like:
+
+
+    
     ```ini
     [monitor:///home/cisco/spring-petclinic-microservices/deployments/hybrid/java/app.log]
     #  Sets the source type.  This is crucial for Splunk to understand
@@ -1643,9 +1646,7 @@ Complete
     #  of the machine where the data is coming from.
     host = visits-service-x
     ```
-    You will find an inputs file in the Github repo.
-    Ensure `/home/cisco/spring-petclinic-microservices/deployments/hybrid/java/app.log` is the correct path to where the `visits-service-x` application log will be written after configuring logback. If you are utilizing our visit-service scripts then this is the location.
-    Place this `inputs.conf` in `/opt/splunkforwarder/etc/system/local/`.
+    You will find an inputs file in the Github repo. Ensure `/home/cisco/spring-petclinic-microservices/deployments/hybrid/java/app.log` is the correct path to where the `visits-service-x` application log will be written after configuring logback. If you are utilizing our visit-service scripts then this is the location. Place this `inputs.conf` in `/opt/splunkforwarder/etc/system/local/`. You can do that with the following command.
 
     ```bash
     cp ~/spring-petclinic-microservices/splunk_loc/inputs.conf /opt/splunkforwarder/etc/system/local/

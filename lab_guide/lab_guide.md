@@ -335,6 +335,32 @@ The last service to be started is the legacy visits service running on its dedic
    ```bash
    ./run.sh
    ```
+> [!TIP]
+> **Running the visits-service**
+> 
+> You have two options for running the visits-service:
+> 
+> 1. **Foreground (Recommended for Lab)**
+>    - Simply run: `./run.sh`
+>    - Process will be visible in terminal
+>    - Easy to stop with Ctrl+C
+>    - Recommended for lab as you'll need to restart the service multiple times
+> 
+> 2. **Background**
+>    - Run: `nohup ./run.sh &`
+>    - Process runs in background
+>    - Output goes to nohup.out
+>    - To stop the process:
+>      ```bash
+>      # Find the process ID
+>      ps aux | grep java
+>      # Kill the process (replace <PID> with actual process ID)
+>      kill -9 <PID>
+>      ```
+> 
+> **Note**: For this lab, we recommend running in foreground mode as you'll need to restart the service multiple times to configure different features.
+
+
 
 ### Navigate to the UI
 

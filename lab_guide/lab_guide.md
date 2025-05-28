@@ -1627,16 +1627,33 @@ Complete
     cd /home/cisco/spring-petclinic-microservices/splunk_loc/100_scv-shw-12cdc3a9c00cff_splunkcloud/local
     cp -r . /opt/splunkforwarder/etc/system/local/
     ```
-    For this lab, we will specifically need to copy the `outputs.conf` from the extracted `splunkclouduf.spl` files. You'll also need an `inputs.conf` to tell the forwarder which files to monitor (e.g., `app.log` from the `visits-service`). An example `inputs.conf` might look like:
+    For this lab, we will specifically need to copy the `outputs.conf` from the extracted `splunkclouduf.spl` files. You'll also need an `inputs.conf` to tell the forwarder which files to monitor (e.g., `app.log` from the `visits-service`). An example `inputs.conf` looks like:
     ```ini
-    [monitor:///path/to/your/spring-petclinic-microservices/visits-service/app.log]
-    disabled = false
-    sourcetype = my_app_logs
-    index = main
+    [monitor:///home/cisco/spring-petclinic-microservices/deployments/hybrid/java/app.log]
+    #  Sets the source type.  This is crucial for Splunk to understand
+    #  the format of your data.  If Splunk doesn't have a pre-defined
+    #  sourcetype, you can create your own in props.conf.
+    sourcetype = _raw
+
+    #  Sets the index to store the data.  "main" is the default.
+    #  Change this if you want to store the data in a different index.
+    index = clus_logs
+
+    #  (Optional) Sets the host.  If not set, Splunk will use the hostname
+    #  of the machine where the data is coming from.
+    host = visits-service-x
     ```
     You will find an inputs file in the Github repo.
-    *(Ensure `/path/to/your/spring-petclinic-microservices/visits-service/app.log` is the correct path to where the `visits-service` application log will be written after configuring logback).*
+    Ensure `//home/cisco/spring-petclinic-microservices/deployments/hybrid/java/app.log` is the correct path to where the `visits-service-x` application log will be written after configuring logback. If you are utilizing our visit-service scripts then this is the location.
     Place this `inputs.conf` in `/opt/splunkforwarder/etc/system/local/`.
+
+    ```bash
+    cp ~/spring-petclinic-microservices/splunk_loc/inputs.conf /opt/splunkforwarder/etc/system/local/
+    ```
+> [!TIP]
+> **UPDATE YOUR INPUTS FILE HOSTNAME VARIBALE**
+> In order to help you filter better in the Splunk platform, edit your hostname in `inputs.conf` with your student ID. This will help you to find data specific to your host in Splunk platform. 
+
 8.  Restart Splunk Forwarder for changes to take effect:
     ```bash
     /opt/splunkforwarder/bin/splunk restart

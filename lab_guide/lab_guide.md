@@ -780,7 +780,7 @@ From the agent selection wizard, select **Database Agent**.
 ![Install Agent - Summary](img/image015.png)
 *Image 15: Install Agent wizard - Selecting the correct target host.*
 2.  Click the **Next** button at the bottom of the page to proceed.
-3.  Change the **Agent Name** to your student number (**Petclinic-X**) and once finished go ahead and hit the **Next** button.
+3.  Change the **Agent Name** to your student number (**`Petclinic-X`**) and once finished go ahead and hit the **Next** button.
 ![Install Agent - Summary](img/image016.png)
 *Image 16: Changing the agent settings to match the lab environment*
 4.  On the next screen we can adjust any setting needed for the application and Appdynamics monitoring environment. Be sure to match what we have configured in this screenshot. 
@@ -936,7 +936,7 @@ By following these steps, you should be able to determine if the AppDynamics BRU
 
 -----
 
-### Create a BRUM Application in AppDynamics ⚙️
+### Create a BRUM Application in AppDynamics 
 
 In the previous section you found out, that the agent in present but not configured. To get a proper configuration for the ADRUM agent (see [AppDynamics Docs](https://docs.appdynamics.com/appd/24.x/latest/en/end-user-monitoring/browser-monitoring/browser-real-user-monitoring/set-up-and-access-browser-rum)), you can navigate to the AppDynamics controller and log in with your pod's credentials.
 

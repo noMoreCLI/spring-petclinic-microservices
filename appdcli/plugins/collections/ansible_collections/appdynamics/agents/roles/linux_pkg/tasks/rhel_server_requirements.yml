@@ -1,8 +1,0 @@
----
-- name: Install tools and pre-requisites for RedHat variants
-  ansible.builtin.yum:
-    update_cache: yes
-    name:
-     - unzip
-     - bzip2
-    state: installed

@@ -1,0 +1,19 @@
+max_concurrency: 4
+remote_dir: "/opt/appdynamics/appdsmartagent"
+protocol:
+  type: ssh
+  auth:
+    username: cisco
+    private_key_path: /home/cisco/.ssh/id_rsa
+    privileged: true # switch to false to install agent as a process with the specified user privileges.
+    ignore_host_key_validation: true
+    known_hosts_path: /home/cisco/.ssh/known_hosts
+hosts:
+  - host: "198.18.134.24"
+    port: 22
+    user: root
+    group: root
+  - host: "198.18.134.25"
+    port: 22
+    user: root
+    group: root

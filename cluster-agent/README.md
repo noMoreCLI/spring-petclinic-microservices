@@ -26,23 +26,26 @@ This Ansible project automates the installation and configuration of the AppDyna
 
 ### Variables
 
-The following variables need to be configured in the playbook or through environment variables:
+Set these variables in the local Ansible Vault file described below:
 
 - `controller_url`: AppDynamics Controller URL
 - `controller_account`: AppDynamics account name
-- `controller_username`: Controller username
-- `controller_password`: Controller password (recommended to use vault)
-- `controller_access_key`: Controller access key (recommended to use vault)
+- `controller_access_key`: Controller account access key; keep it in Ansible Vault only
 - `app_name`: Name of your application
 - `namespace_to_monitor`: Regex pattern for namespaces to monitor
 - `namespace_to_instrument`: Regex pattern for namespaces to instrument
 
 ## Usage
 
-1. Configure your inventory and variables
-2. Run the playbook:
+1. Copy the example variables file and populate it locally:
    ```bash
-   ansible-playbook -i inventory.ini cluster-agent-install.yaml 
+   cp vars/secrets.example.yaml vars/secrets.yaml
+   ansible-vault encrypt vars/secrets.yaml
+   ```
+   The local `vars/secrets.yaml` file is ignored by Git.
+2. Run the playbook from the `cluster-agent` directory. Use `--ask-vault-pass` for the encrypted variables file; add `--ask-pass --ask-become-pass` only if your SSH setup requires password authentication:
+   ```bash
+   ansible-playbook -i inventory.ini cluster-agent-install.yaml --ask-vault-pass
    ```
 
 The playbook will:
@@ -64,9 +67,9 @@ kubectl logs -n appdynamics -l app=cluster-agent
 
 ## Security Notes
 
-- Passwords and access keys should be stored securely using Ansible Vault
-- SSH passwords are prompted during playbook execution
-- Consider using SSH keys instead of passwords for production environments
+- Never commit `vars/secrets.yaml`; it is ignored by Git and should be encrypted with Ansible Vault.
+- Do not print rendered values files or credentials in Ansible logs.
+- Prefer SSH keys; if password authentication is required, use Ansible's interactive prompts rather than storing the password in inventory.
 
 ## Troubleshooting
 

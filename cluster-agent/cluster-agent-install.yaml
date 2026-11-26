@@ -12,35 +12,6 @@
     appdynamics_namespace: "appdynamics"
 
   pre_tasks:
-    - name: Debug variables
-      debug:
-        msg:
-          - "Controller URL: {{ controller_url }}"
-          - "Controller Account: {{ controller_account }}"
-          - "App Name: {{ app_name }}"
-          - "Template path: {{ playbook_dir }}/cluster-agent-values.yaml.j2"
-
-    - name: Ensure cluster agent directory exists
-      file:
-        path: /home/cisco/cl25/cluster-agent
-        state: directory
-        mode: '0755'
-
-    - name: Copy template file to remote host
-      copy:
-        src: cluster-agent-values.yaml.j2
-        dest: /home/cisco/cl25/cluster-agent/cluster-agent-values.yaml.j2
-        mode: '0644'
-
-    - name: Verify template content
-      command: "cat /home/cisco/cl25/cluster-agent/cluster-agent-values.yaml.j2"
-      register: template_content
-      changed_when: false
-
-    - name: Display template content
-      debug:
-        var: template_content.stdout_lines
-
     - name: Verify Kubernetes cluster access
       kubernetes.core.k8s_info:
         kind: Node
@@ -75,18 +46,10 @@
       template:
         src: "{{ playbook_dir }}/cluster-agent-values.yaml.j2"
         dest: "{{ values_file_path }}"
-        mode: '0644'
+        mode: '0600'
+      no_log: true
       register: template_result
       failed_when: template_result.failed
-
-    - name: Debug values file content
-      command: "cat {{ values_file_path }}"
-      register: values_content
-      changed_when: false
-
-    - name: Display values file content
-      debug:
-        var: values_content.stdout_lines
 
     - name: Install Cluster Agent with Helm
       community.kubernetes.helm:
